@@ -1,13 +1,96 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  /* font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+    sans-serif; */
+  font-family: 'Outfit', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #E7F6F2;
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+a {
+  text-decoration: none;
+}
+
+.intro-section {
+  padding-top: 90px;
+  background: #2C3333;
+  color: white;
+  height: 800px;
+  clip-path: polygon(0 0, 100% 0, 100% 70%, 0% 100%);
+}
+
+.project-section {
+  margin-top: 250px;
+  padding-top: 190px;
+  clip-path: polygon(0 10%, 100% 0, 100% 90%, 0% 100%);
+  background: #2C3333;
+  color: white;
+  height: 1400px;
+}
+
+.init-loader {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-loader {
+  width:50px;
+  height:24px;
+  background: 
+    radial-gradient(circle closest-side,#2C3333 90%,#0000) 0%   50%,
+    radial-gradient(circle closest-side,#2C3333 90%,#0000) 50%  50%,
+    radial-gradient(circle closest-side,#2C3333 90%,#0000) 100% 50%;
+  background-size:calc(100%/3) 12px;
+  background-repeat: no-repeat;
+  animation:d3 1s infinite linear;
+}
+@keyframes d3 {
+    20%{background-position:0%   0%, 50%  50%,100%  50%}
+    40%{background-position:0% 100%, 50%   0%,100%  50%}
+    60%{background-position:0%  50%, 50% 100%,100%   0%}
+    80%{background-position:0%  50%, 50%  50%,100% 100%}
+}
+
+@media only screen and (max-width: 660px) {
+  .project-section {
+    margin-top: 250px;
+    padding-top: 10px;
+    clip-path: polygon(0 5%, 100% 0, 100% 95%, 0% 100%);
+    background: #2C3333;
+    color: white;
+    height: 2400px;
+  }
+
+  .intro-section {
+    padding-top: 90px;
+    height: 800px;
+    clip-path: polygon(0 0, 100% 0, 100% 90%, 0% 100%);
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  .project-section {
+    margin-top: 250px;
+    padding-top: 150px;
+    clip-path: polygon(0 5%, 100% 0, 100% 95%, 0% 100%);
+    background: #2C3333;
+    color: white;
+    height: 1500px;
+  }
+
+  .intro-section {
+    padding-top: 90px;
+    height: 800px;
+    clip-path: polygon(0 0, 100% 0, 100% 90%, 0% 100%);
+  }
 }
