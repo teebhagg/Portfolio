@@ -3,6 +3,7 @@ import MyNavBar from '../components/nav-bar'
 import IntroSection from '../components/intro-section'
 import AboutSection from '../components/about-section'
 import ProjectsSection from '../components/projects-section'
+import Contact from '../components/contact'
 
 export default function Main() {
   return (
@@ -11,6 +12,7 @@ export default function Main() {
       <IntroSection/>
       <AboutSection/>
       <ProjectsSection/>
+      <Contact/>
     </>
   )
 }

@@ -24,7 +24,7 @@ export default function ProjectCard(props: Props) {
 
   return (
     <a href={link} target='blank'>
-      <div style={{ background: '#E7F6F2', padding:'10px', margin: 'auto', color: 'black', borderRadius: '8px' }} >
+      <div style={{ background: '#E7F6F2', height: '100%', padding:'10px', margin: 'auto', color: 'black', borderRadius: '8px' }} >
         <img src={image} alt="" style={{ width: '100%', aspectRatio: 16/9, borderRadius:'6px' }} />
         <Typography>{projectType}</Typography>
         <Typography fontSize={20} fontWeight={'600'} >{projectDescr}</Typography>

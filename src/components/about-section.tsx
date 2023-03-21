@@ -1,4 +1,4 @@
-import { Container, Typography } from '@mui/material'
+import { Button, Container, Typography } from '@mui/material'
 import React from 'react'
 import { useMediaQuery } from 'react-responsive';
 
@@ -27,6 +27,13 @@ export default function AboutSection() {
   const bootstrap_icon = require('../images/bootstrap.svg')
 
   const tech_icons = [js_icon, nodejs_icon, react_icon, ts_icon, express_icon, mongo_icon, firebase_icon, python_icon, flutter_icon, bootstrap_icon, mui_icon, redux_icon]
+
+  const onDownload = () => {
+    const link = document.createElement("a");
+    link.download = "Joshua's CV.pdf";
+    link.href = "../Joshua's CV.pdf";
+    link.click();
+  };
   return (
     <Container sx={{ marginTop:'250px' }}>
       <Typography>About Me</Typography>
@@ -49,6 +56,14 @@ export default function AboutSection() {
               <img src={element.default} alt="" style={{ height:'50px' }} />
             )}
           </div>
+          <Button
+           variant="contained"
+           color="secondary"
+           disableElevation
+           style={{ borderRadius: 50, marginTop:'75px' }}
+           onClick={onDownload}
+          >Get My CV
+          </Button>
         </div>
         <img src={profile_pic} alt="" style={{ height: isMobileDevice ? '70%' : isTabletDevice ? '300px' : '400px' }} />
       </div>

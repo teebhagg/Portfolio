@@ -20,19 +20,19 @@ export default function IntroSection() {
     <div className="intro-section">
       <Container maxWidth='lg' sx={isMobileDevice? container_style_mobile : container_style_default} >
           <Lottie animationData={dev} style={{ height: isMobileDevice ? '350px' : isTabletDevice? '450px' : '550px' }} />
-          <Animated
+          {/* <Animated
             animationIn="fadeInUp" 
             animationOut="zoomOut" 
             animationInDuration={2000} 
             animationOutDuration={1000} 
             isVisible={true}
-          >
+          > */}
             <div style={{ margin: 'auto', width: 'fit-content' }} >
               <Typography>hey there, I am</Typography>
               <Typography sx={{ fontWeight:'600', fontSize: isMobileDevice? '50px' : isTabletDevice ? '70px' : '100px', textAlign: 'center' }} >Joshua<br />Ansah</Typography>
               <Typography>web developer  || mobile developer</Typography>
             </div>
-          </Animated>
+          {/* </Animated> */}
           
       </Container>
     </div>

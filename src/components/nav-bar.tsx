@@ -29,7 +29,7 @@ export default function MyNavBar() {
     <AppBar elevation={0} sx={{ background:'rgba(44, 51, 51, 0.4)', backdropFilter:'blur(10px)', }} >
       <Container maxWidth='lg' sx={{ display:'flex', justifyContent: 'space-between' }} >
         <img src={logo.default} alt="" />
-        {!isMobileDevice ? <div style={{ display:'flex', gap:'15%', marginTop:"auto", marginBottom: 'auto', marginRight:'5%' }}>
+        {!isMobileDevice ? <div style={{ display:'flex', gap:'30px', marginTop:"auto", marginBottom: 'auto'}}>
           <Typography>About</Typography>
           <Typography>Projects</Typography>
           <Typography>Contact</Typography>

@@ -61,14 +61,14 @@ a {
     80%{background-position:0%  50%, 50%  50%,100% 100%}
 }
 
-@media only screen and (max-width: 660px) {
+@media only screen and (max-width: 768px) {
   .project-section {
     margin-top: 250px;
-    padding-top: 10px;
+    padding-top: 150px;
     clip-path: polygon(0 5%, 100% 0, 100% 95%, 0% 100%);
     background: #2C3333;
     color: white;
-    height: 2400px;
+    height: 1500px;
   }
 
   .intro-section {
@@ -78,14 +78,15 @@ a {
   }
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 660px) {
   .project-section {
     margin-top: 250px;
-    padding-top: 150px;
+    padding-top: 10px;
+    padding-bottom: 80%;
     clip-path: polygon(0 5%, 100% 0, 100% 95%, 0% 100%);
     background: #2C3333;
     color: white;
-    height: 1500px;
+    height: fit-content;
   }
 
   .intro-section {

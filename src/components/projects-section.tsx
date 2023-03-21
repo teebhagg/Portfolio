@@ -25,16 +25,16 @@ enum GreenGhana {
 
 enum Storify {
   url = '',
-  descr = 'E-Commerce (under development)'
+  descr = 'E-Commerce (Development in Progress)'
 }
 
 enum MovieWeb {
   url = '',
-  descr = 'Movie Web App (Under redesign)'
+  descr = 'Movie Web App (Undergoing redesign)'
 }
 enum Documentaries {
   url = '',
-  descr = 'Photography Port (Under development)'
+  descr = 'Photography Portfolio (Development in Progress)'
 }
 
 export default function ProjectsSection() {
@@ -56,7 +56,7 @@ export default function ProjectsSection() {
         <Typography>
           Projects
         </Typography>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobileDevice? 'repeat(1, minmax(0, 1fr))': isTabletDevice? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))', gap: '20px', marginTop: '50px', width:'fit-content' }} >
+        <div style={{ display: 'grid', gridTemplateColumns: isMobileDevice? 'repeat(1, minmax(0, 1fr))': isTabletDevice? 'repeat(2, minmax(0, 1fr))' : 'repeat(3, minmax(0, 1fr))', rowGap:'50px', gap: '20px', marginTop: '50px', width:'fit-content' }} >
           <ProjectCard link={blogP.blog_url} image={blog_image} projectType={projectType.web} projectDescr={blogP.blog_descr} />
           <ProjectCard link={arrant.arr_url} image={arrant_image} projectType={projectType.web} projectDescr={arrant.arr_descr} />
           <ProjectCard link='' image='' projectDescr={GreenGhana.descr} projectType={projectType.mobile} />
