@@ -7,7 +7,8 @@ interface Props {
   image: any,
   link: any,
   projectType: string,
-  projectDescr: any
+  projectDescr: any,
+  delay: string
 }
 
 export default function ProjectCard(props: Props) {
@@ -20,11 +21,11 @@ export default function ProjectCard(props: Props) {
     query: "(max-device-width: 768px)",
   });
 
-  const { image, link, projectDescr, projectType } = props
+  const { image, link, projectDescr, projectType, delay } = props
 
   return (
     <a href={link} target='blank'>
-      <div style={{ background: '#E7F6F2', height: '100%', padding:'10px', margin: 'auto', color: 'black', borderRadius: '8px' }} >
+      <div data-aos="fade-up" data-aos-duration="2000" data-aos-delay={delay} style={{ background: '#E7F6F2', height: '95%', padding:'10px', margin: 'auto', color: 'black', borderRadius: '8px' }} >
         <img src={image} alt="" style={{ width: '100%', aspectRatio: 16/9, borderRadius:'6px' }} />
         <Typography>{projectType}</Typography>
         <Typography fontSize={20} fontWeight={'600'} >{projectDescr}</Typography>

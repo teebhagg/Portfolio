@@ -1,7 +1,11 @@
 import { AppBar, Container, Typography } from '@mui/material'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useMediaQuery } from 'react-responsive';
 import MyDrawer from './drawer';
+
+let aboutDiv = document.querySelector('#about')
+let projectsDiv = document.querySelector('#projects')
+let contactDiv = document.querySelector('#contact')
 
 export default function MyNavBar() {
 
@@ -22,17 +26,22 @@ export default function MyNavBar() {
     (open: boolean) =>
     {
       setDrawerState( open );
-    };
+  };
 
-
+  useEffect(() => {
+    aboutDiv = document.querySelector('#about')
+    projectsDiv = document.querySelector('#projects')
+    contactDiv = document.querySelector('#contact')
+  }, [])
+    
   return (
     <AppBar elevation={0} sx={{ background:'rgba(44, 51, 51, 0.4)', filter:'blue(10px)', backdropFilter:'blur(10px)', backgroundSize:'cover' }} >
       <Container maxWidth='lg' sx={{ display:'flex', justifyContent: 'space-between' }} >
         <img src={logo.default} alt="" />
         {!isMobileDevice ? <div style={{ display:'flex', gap:'30px', marginTop:"auto", marginBottom: 'auto'}}>
-          <Typography>About</Typography>
-          <Typography>Projects</Typography>
-          <Typography>Contact</Typography>
+          <Typography onClick={(e)=>{aboutDiv!.scrollIntoView({behavior:'smooth'})}} sx={{ cursor: 'pointer' }} >About</Typography>
+          <Typography onClick={(e)=>{projectsDiv!.scrollIntoView({behavior:'smooth'})}} sx={{ cursor: 'pointer' }} >Projects</Typography>
+          <Typography onClick={(e)=>{contactDiv!.scrollIntoView({behavior:'smooth'})}} sx={{ cursor: 'pointer' }} >Contact</Typography>
         </div> : null}
         {isMobileDevice ? 
           <img src={ham_burger_icon.default} onClick={e=>toggleDrawer(true)} alt="" /> 

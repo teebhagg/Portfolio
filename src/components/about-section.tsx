@@ -35,10 +35,13 @@ export default function AboutSection() {
     link.click();
   };
   return (
-    <Container sx={{ marginTop:'250px' }}>
-      <Typography>About Me</Typography>
-      <div style={{display:'flex', justifyContent:'space-between', marginTop:'50px', flexDirection: isMobileDevice ? 'column-reverse' : 'row'}} >
-        <div style={{ width: isMobileDevice ? '100%' : '60%' }}>
+    <Container id='about' sx={{ marginTop:'125px', paddingTop:'125px' }}>
+      <div data-aos="fade-up" data-aos-duration="1500" data-aos-delay="0" >
+        <Typography>About Me</Typography>
+      </div>
+      <div style={{display:'flex', justifyContent:'space-between', marginTop:'50px', flexDirection: isMobileDevice ? 'column-reverse' : 'row'}}
+      >
+        <div data-aos="fade-up" data-aos-duration="1500" data-aos-delay="500" style={{ width: isMobileDevice ? '100%' : '60%' }}>
           <Typography>
           Joshua Ansah is a highly motivated front-end developer and designer with a passion for web and mobile app development.
           <br />
@@ -51,7 +54,7 @@ export default function AboutSection() {
           <br />
           Technologies I use:
           </Typography>
-          <div style={{ display: 'flex', gap:'15px', flexWrap: 'wrap', marginTop: '50px' }} >
+          <div data-aos="fade-up" data-aos-duration="1500" data-aos-delay="750" style={{ display: 'flex', gap:'15px', flexWrap: 'wrap', marginTop: '50px' }} >
             {tech_icons.map(element=>
               <img src={element.default} alt="" style={{ height:'50px' }} />
             )}
@@ -65,7 +68,7 @@ export default function AboutSection() {
           >Get My CV
           </Button>
         </div>
-        <img src={profile_pic} alt="" style={{ height: isMobileDevice ? '70%' : isTabletDevice ? '300px' : '400px' }} />
+        <img data-aos="fade-up" data-aos-duration="1500" data-aos-delay="650" src={profile_pic} alt="" style={{ height: isMobileDevice ? '70%' : isTabletDevice ? '300px' : '400px' }} />
       </div>
     </Container>
   )

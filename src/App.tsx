@@ -1,11 +1,14 @@
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { useEffect, useState } from "react";
 import Main from "./pages/main";
+import AOS from 'aos'
+import 'aos/dist/aos.css';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    AOS.init()
     setTimeout(() => {
       setIsLoading(false);
     }, 2000);

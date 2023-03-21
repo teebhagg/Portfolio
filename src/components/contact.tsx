@@ -10,9 +10,11 @@ const contact_icons = [linkedin_icon, github_icon, mail_icon, call_icon]
 
 export default function Contact() {
   return (
-    <Container maxWidth='lg' sx={{ marginY:'250px' }} >
-      <Typography sx={{ marginBottom:'50px' }} >Contact</Typography>
-      <div style={{ display:'flex', justifyContent: 'space-between' }} >
+    <Container id='contact' maxWidth='lg' sx={{ marginY:'250px' }} >
+      <div data-aos="fade-up" data-aos-duration="2000" data-aos-delay="0">
+        <Typography sx={{ marginBottom:'50px' }} >Contact</Typography>
+      </div>
+      <div data-aos="fade-up" data-aos-duration="2000" data-aos-delay="500" style={{ display:'flex', justifyContent: 'space-between' }} >
         <a href="https://www.linkedin.com/in/joshua-ansah-b0a15a230/" target='_blank' >
           <img src={linkedin_icon.default} height={'70px'} />
         </a>
