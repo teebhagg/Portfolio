@@ -26,7 +26,7 @@ export default function MyNavBar() {
 
 
   return (
-    <AppBar elevation={0} sx={{ background:'rgba(44, 51, 51, 0.4)', backdropFilter:'blur(10px)', }} >
+    <AppBar elevation={0} sx={{ background:'rgba(44, 51, 51, 0.4)', filter:'blue(10px)', backdropFilter:'blur(10px)', backgroundSize:'cover' }} >
       <Container maxWidth='lg' sx={{ display:'flex', justifyContent: 'space-between' }} >
         <img src={logo.default} alt="" />
         {!isMobileDevice ? <div style={{ display:'flex', gap:'30px', marginTop:"auto", marginBottom: 'auto'}}>
