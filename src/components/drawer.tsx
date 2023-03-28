@@ -31,7 +31,6 @@ export default function MyDrawer(props: Props) {
         style: {
           height: "fit-Content",
           width: "100%",
-          opacity: 0.85,
           background: "rgba(44, 51, 51, 1)",
           color: "white",
         },
