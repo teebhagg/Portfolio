@@ -18,6 +18,10 @@ a {
   text-decoration: none;
 }
 
+.MuiAppBar-root {
+  background-color: red;
+}
+
 .intro-section {
   padding-top: 90px;
   background: #2C3333;
@@ -94,4 +98,11 @@ a {
     height: 800px;
     clip-path: polygon(0 0, 100% 0, 100% 90%, 0% 100%);
   }
+}
+
+
+.custom-appbar {
+  background: rgba(44, 51, 51, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
