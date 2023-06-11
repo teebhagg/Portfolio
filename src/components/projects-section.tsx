@@ -8,33 +8,28 @@ enum projectType {
   design = "User Interface Design",
 }
 
-enum blogP {
-  blog_url = "https://bhagg-bloggs-frontend.vercel.app/",
-  blog_descr = "Blog Website (Bhagg Bloggs)",
-}
-enum arrant {
-  arr_url = "https://arrantservices.org/",
-  arr_descr = "Official Website for Arrant Services",
-}
-
-enum GreenGhana {
-  url = "",
-  descr = "Green Ghana (Soon to be released)",
+const urls = {
+  blogUrl: "https://bhagg-bloggs-frontend.vercel.app/",
+  arrantUrl:"https://arrantservices.org/",
+  greenGhanaUrl: "https://play.google.com/store/apps/details?id=org.fcghana.green_ghana&hl=en",
+  storifyUrl: "https://storify-ten.vercel.app/",
+  movieWebUrl: "https://teebhagg.github.io/dpmovies/",
+  profitradeUrl: "https://profitrade.tech",
+  theTransporterUrl: "",
+  theTransporterCourierUrl: "",
 }
 
-enum Storify {
-  url = "https://storify-ten.vercel.app/",
-  descr = "E-Commerce (Development in Progress)",
+const description = {
+  blogDescr: "Blog Website (Bhagg Bloggs)",
+  arrantDescr: "Official Website for Arrant Services",
+  greenGhanaDescr: "Green Ghana",
+  storifyDescr: "E-Commerce (Development in Progress)",
+  movieWebUrl: "Movie Web App (Undergoing redesign)",
+  profitradeDescr: "Crypto Trading Platform",
+  theTransporterDescr: "The Transporter (Soon to be released)",
+  theTransporterCourierDescr: "The Transporter - Courier (Soon to be released)",
 }
 
-enum MovieWeb {
-  url = "https://teebhagg.github.io/dpmovies/",
-  descr = "Movie Web App (Undergoing redesign)",
-}
-enum Documentaries {
-  url = "",
-  descr = "Photography Portfolio (Development in Progress)",
-}
 
 export default function ProjectsSection() {
   const isMobileDevice = useMediaQuery({
@@ -49,6 +44,8 @@ export default function ProjectsSection() {
   const arrant_image = require("../images/arrant.png");
   const movie_image = require("../images/movie.png");
   const storify_image = require("../images/storify.png");
+  const profitrade = require("../images/profitrade.png");
+  const green_ghana = require("../images/greenghana.png");
 
   return (
     <div className="project-section">
@@ -71,45 +68,59 @@ export default function ProjectsSection() {
           }}>
           <ProjectCard
             delay="500"
-            link={blogP.blog_url}
+            link={urls.blogUrl}
             image={blog_image}
             projectType={projectType.web}
-            projectDescr={blogP.blog_descr}
+            projectDescr={description.blogDescr}
           />
           <ProjectCard
             delay="600"
-            link={arrant.arr_url}
+            link={urls.arrantUrl}
             image={arrant_image}
             projectType={projectType.web}
-            projectDescr={arrant.arr_descr}
+            projectDescr={description.arrantDescr}
           />
           <ProjectCard
             delay="700"
-            link=""
-            image=""
-            projectDescr={GreenGhana.descr}
+            link={urls.greenGhanaUrl}
+            image={green_ghana}
+            projectDescr={description.greenGhanaDescr}
             projectType={projectType.mobile}
           />
           <ProjectCard
             delay="800"
-            link={Storify.url}
+            link={urls.storifyUrl}
             image={storify_image}
-            projectDescr={Storify.descr}
+            projectDescr={description.storifyDescr}
             projectType={projectType.web}
           />
           <ProjectCard
             delay="900"
-            link={MovieWeb.url}
+            link={urls.movieWebUrl}
             image={movie_image}
-            projectDescr={MovieWeb.descr}
+            projectDescr={description.movieWebUrl}
             projectType={projectType.web}
           />
           <ProjectCard
             delay="1000"
-            link=""
-            image=""
-            projectDescr={Documentaries.descr}
+            link={urls.profitradeUrl}
+            image={profitrade}
+            projectDescr={description.profitradeDescr}
             projectType={projectType.web}
+          />
+          <ProjectCard
+            delay="1100"
+            link={urls.theTransporterUrl}
+            image=""
+            projectDescr={description.theTransporterDescr}
+            projectType={projectType.mobile}
+          />
+          <ProjectCard
+            delay="1200"
+            link={urls.theTransporterCourierUrl}
+            image=""
+            projectDescr={description.theTransporterCourierDescr}
+            projectType={projectType.mobile}
           />
         </div>
       </Container>

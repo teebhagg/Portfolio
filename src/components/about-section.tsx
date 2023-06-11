@@ -30,8 +30,8 @@ export default function AboutSection() {
 
   const onDownload = () => {
     const link = document.createElement("a");
-    link.download = "Joshua's CV.pdf";
-    link.href = "../Joshua's CV.pdf";
+    link.download = "My Resume.pdf";
+    link.href = "../My Resume.pdf";
     link.click();
   };
   return (
