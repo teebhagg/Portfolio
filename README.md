@@ -30,7 +30,7 @@ To view my portfolio, simply click on the following link: [Portfolio](http://jos
 Feel free to reach out to me through the following channels:
 
 - Email: [khalijonez777@gmail.com](mailto:khalijonez777@gmail.com)
-- LinkedIn: [Your LinkedIn Profile](https://www.linkedin.com/in/joshua-ansah-b0a15a230/)
+- LinkedIn: [Joshua Ansah](https://www.linkedin.com/in/joshua-ansah-b0a15a230/)
 
 I'm open to feedback, suggestions, and collaboration opportunities. Don't hesitate to get in touch!
 
