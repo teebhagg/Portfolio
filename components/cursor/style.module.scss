@@ -1,0 +1,19 @@
+.cursor {
+  opacity: 0;
+  z-index: 9999;
+  position: fixed;
+  width: 15px;
+  height: 15px;
+  background-color: hsl(var(--foreground));
+  border-radius: 50%;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+
+  &.hidden {
+    opacity: 0;
+  }
+
+  &.visible {
+    opacity: 1;
+  }
+}
