@@ -96,14 +96,14 @@ const ProjectPage = (props: ProjectPageProps) => {
         height={832}
         alt={metadata.name}
         className="my-12 rounded-lg"
-        />
-      <p className='text-xl lg:text-3xl'>Tech Stack</p>
-      <div className='mb-8'>
-        {metadata.techstack.map((tech) => (
-          <ul className='list-disc list-inside'>
-            <li>{tech.label}</li>
-          </ul>
-        ))}
+      />
+      <p className="text-xl lg:text-3xl">Tech Stack</p>
+      <div className="mb-8">
+        <ul className="list-inside list-disc">
+          {metadata.techstack.map((tech) => (
+            <li key={tech.label}>{tech.label}</li>
+          ))}
+        </ul>
       </div>
       {content}
     </div>
