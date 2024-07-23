@@ -5,15 +5,14 @@ const experiences: Experience[] = [
     name: 'Software Developer',
     duration: 'Mar 2023 - Present',
     company: 'Humandev IP',
-    description:
-      `- Collaborated on stages of systems development lifecycle from requirement gathering to production releases.\n- Created responsive and intuitive user interfaces for web and mobile applications.\n - Planned and developed interfaces that simplified overall management and offered ease of use.`
+    description: `- Collaborated on stages of systems development lifecycle from requirement gathering to production releases.\n- Created responsive and intuitive user interfaces for web and mobile applications.\n - Planned and developed interfaces that simplified overall management and offered ease of use.`
   },
   {
     name: 'Software Developer',
     duration: 'Feb 2022 - Present',
     company: 'Freelance',
     description:
-      'Creating delightful and intuitive user experiences, specializing in responsive design and user-centric methodologies.'
+      '- Designed and built the Moyosore portfolio and blogging web application in December 2023.\n - Contribution to the development of the Green Ghana mobile app in May 2023.\n - Developed a landing page for Shine Energy Company in the third quarter of 2023.\n'
   },
   {
     name: 'Frontend Developer',

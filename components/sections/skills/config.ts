@@ -29,7 +29,7 @@ const skills: Skill[] = [
   {
     name: 'More',
     Icon: Computer,
-    description: `More\n\n - Git, GitHub\n - RESTful APIs\n - Agile Methodologies\n - Responsive Web Design\n - Debugging\n - Problem-Solving\n - Communication\n - Teamwork\n - Continuous Learning`
+    description: `Skills that encompasses a variety of technologies, frameworks, and best practices to ensure a seamless user experience and efficient performance.\n\n - Git, GitHub\n - RESTful APIs\n - Agile Methodologies\n - Responsive Web Design\n - Debugging\n - Problem-Solving\n - Communication\n - Teamwork\n - Continuous Learning`
   }
 ];
 
