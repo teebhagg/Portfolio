@@ -3,7 +3,7 @@ import { Metadata } from '@/types/metadata';
 const metadata: Metadata = {
   author: {
     name: 'Joshua Ansah',
-    username: 'johndoe',
+    username: 'joshuaansah',
     label: 'Software Developer'
   },
   site: {

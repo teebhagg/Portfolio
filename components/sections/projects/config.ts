@@ -49,7 +49,14 @@ const projects: Project[] = [
     description:
       'A movie catalogue website that provides information about movies, actors, and directors. The website allows users to search for movies by title, actor, or director.',
     thumbnail: '/images/projects/movie_catalogue/cover.jpg'
-  }
+  },
+  {
+    name: 'UZI-Express',
+    slug: 'uzi_express',
+    description:
+      'An e-commerce platform where users can buy and sell. The platform helps promote a marketplace for eco-friendly products.',
+    thumbnail: '/images/projects/uzi_express/cover.jpg'
+  },
 ];
 
 export { projects };
