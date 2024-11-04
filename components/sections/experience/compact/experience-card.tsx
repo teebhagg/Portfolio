@@ -9,7 +9,6 @@ import { CodeIcon } from 'lucide-react';
 import { Experience } from '@/types/experience';
 
 import { cn } from '@/lib/utils';
-import Markdown from 'react-markdown';
 
 interface ExperienceCardProps extends Experience {
   className?: string;
@@ -30,11 +29,7 @@ function ExperienceCard({
           <span className="text-sm font-medium">{duration}</span>
         </div>
         <h4 className="mt-2 text-lg font-medium uppercase">{name}</h4>
-        <p className="mt-2">
-          <Markdown className='markdown'>
-            {description}
-          </ Markdown>
-        </p>
+        <p className="mt-2">{description}</p>
         <hr className="my-6 border-t border-border" />
       </CardContent>
     </Card>

@@ -4,22 +4,33 @@ const metadata: Metadata = {
   author: {
     name: 'Joshua Ansah',
     username: 'joshuaansah',
-    label: 'Software Developer'
+    label: 'Software Engineer'
   },
   site: {
     title: 'Joshua Ansah - Portfolio Website',
-    description: 'Portfolio of software developer Joshua Asah.',
+    description: 'Portfolio of software engineer Joshua Ansah.',
     ogImage: '/images/og.png',
-    url: 'https://www.example.com',
+    url: 'https://josh-ansah.vercel.app',
     keywords: [
       'web design',
       'web development',
       'mobile development',
+      'software development',
+      'software engineer',
       'flutter',
       'react.js',
       'next.js',
+      'typescript',
+      'tailwindcss',
+      'javascript',
+      'express.js',
+      'mongodb',
+      'node.js',
+      'postgresql',
       'portfolio',
-      'Joshua Ansah'
+      'Joshua Ansah',
+      'joshuaansah',
+      'Joshua Ansah portfolio',
     ],
     language: 'en',
     charset: 'UTF-8'
