@@ -1,12 +1,11 @@
-import React from 'react';
-import { CardContent, CardFooter, Card } from '@/components/ui/card';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 
 import { Project } from '@/types/project';
-import { GithubIcon, GlobeIcon, InfoIcon } from 'lucide-react';
+import { ExternalLink, GithubIcon } from 'lucide-react';
 
 import {
   Tooltip,
@@ -26,54 +25,125 @@ function ProjectCard({
   description,
   thumbnail,
   slug,
+  category,
+  tags,
+  liveUrl,
+  githubUrl,
   className
 }: ProjectCardProps) {
   return (
     <Card
       className={cn(
-        'group relative flex flex-col justify-between overflow-hidden rounded-md bg-muted/40',
+        'group relative flex h-full flex-col justify-between overflow-hidden rounded-lg border transition-all duration-300 hover:shadow-lg dark:hover:shadow-indigo-500/10',
         className
       )}
     >
-      <CardContent className="z-[2] inline-block w-full overflow-hidden p-0">
-        <Image
-          src={thumbnail || '/placeholder.svg'}
-          alt={`Image of ${name}`}
-          width={0}
-          height={0}
-          sizes="100vw"
-          className="h-auto max-h-96 w-full object-cover transition-transform duration-300 hover:scale-105"
-        />
-      </CardContent>
-      <CardFooter className="grid grid-cols-1 items-center gap-4 p-4 md:p-6 lg:grid-cols-2">
-        <div>
-          <h3 className="text-xl font-bold">{name}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {description || ''}
-          </p>
+      <div className="relative overflow-hidden">
+        <div className="absolute left-0 top-0 z-10 m-3">
+          {category && (
+            <span className="rounded-full bg-primary/90 px-3 py-1 text-xs font-medium text-primary-foreground backdrop-blur-sm">
+              {category}
+            </span>
+          )}
         </div>
-        <div className="flex items-center justify-end">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="z-[2] rounded-full border bg-muted hover:bg-foreground/10"
-                  asChild
-                >
-                  <Link href={'/projects/' + slug}>
-                    <InfoIcon />
-                  </Link>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>More Details</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        <CardContent className="z-[2] inline-block w-full overflow-hidden p-0">
+          <div className="relative h-56 w-full overflow-hidden sm:h-64 md:h-72">
+            <Image
+              src={thumbnail || '/placeholder.svg'}
+              alt={`Image of ${name}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          </div>
+        </CardContent>
+      </div>
+
+      <CardFooter className="flex flex-col items-start gap-4 p-5">
+        <div>
+          <h3 className="mb-2 text-xl font-bold tracking-tight transition-colors group-hover:text-primary">
+            {name}
+          </h3>
+          <p className="text-sm text-muted-foreground">{description || ''}</p>
+        </div>
+
+        {tags && tags.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag, i) => (
+              <span
+                key={i}
+                className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-auto flex w-full items-center justify-between">
+          <Link
+            href={'/projects/' + slug}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View Details
+          </Link>
+
+          <div className="flex gap-2">
+            {githubUrl && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-background"
+                      asChild
+                    >
+                      <a
+                        href={githubUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <GithubIcon className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>View Source Code</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            {liveUrl && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 rounded-full bg-background"
+                      asChild
+                    >
+                      <a
+                        href={liveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Visit Live Site</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
         </div>
       </CardFooter>
-      <Link href={'/projects/' + slug} className="z-1 absolute inset-0 block" />
     </Card>
   );
 }

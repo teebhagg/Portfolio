@@ -1,17 +1,17 @@
 import {
+  About,
+  Contact,
+  Experience,
+  Footer,
   Header,
   Hero,
-  About,
-  Skills,
-  Experience,
-  Testimonials,
   Projects,
-  Contact,
-  Footer
+  Skills,
+  Testimonials
 } from '@/components/sections';
 
-import Preloader from '@/components/preloader/preloader';
 import Cursor from '@/components/cursor/cursor';
+import Preloader from '@/components/preloader/preloader';
 import SmoothScroll from '@/components/smooth-scroll';
 
 export default function Home() {

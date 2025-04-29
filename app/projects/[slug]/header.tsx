@@ -1,19 +1,18 @@
 'use client';
 
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowUpRightIcon } from 'lucide-react';
+import { ArrowLeft, Calendar, ExternalLink, GithubIcon } from 'lucide-react';
 
 import Link from 'next/link';
 
 const animation = {
   hide: {
-    x: -30,
+    y: -20,
     opacity: 0
   },
   show: {
-    x: 0,
+    y: 0,
     opacity: 1
   }
 };
@@ -26,6 +25,8 @@ type ProjectMetadata = {
   techstack: Array<{ label: string }>;
   selected: boolean;
   slug: string;
+  date?: string;
+  category?: string;
 };
 
 type HeaderProps = {
@@ -34,46 +35,70 @@ type HeaderProps = {
 
 const Header = (props: HeaderProps) => {
   const {
-    metadata: { name, description, website, github }
+    metadata: { name, description, website, github, date, category }
   } = props;
 
   return (
     <div className="space-y-8 pt-10">
       <motion.div
-        className="flex items-center gap-3"
         initial={animation.hide}
         animate={animation.show}
+        transition={{ duration: 0.5 }}
       >
-        <div className="flex flex-col gap-3">
-          <div className="text-3xl font-bold">{name}</div>
-          <div>{description}</div>
-        </div>
+        <Link
+          href="/projects"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Projects
+        </Link>
       </motion.div>
+
       <motion.div
-        className="flex flex-col items-start gap-2 sm:flex-row sm:gap-4"
+        className="space-y-4"
         initial={animation.hide}
         animate={animation.show}
-        transition={{ delay: 0.1 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        {category && (
+          <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+            {category}
+          </span>
+        )}
+        <h1 className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-4xl font-bold leading-tight tracking-tighter text-transparent sm:text-5xl md:text-6xl">
+          {name}
+        </h1>
+        <p className="max-w-3xl text-xl text-muted-foreground">{description}</p>
+
+        {date && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>{date}</span>
+          </div>
+        )}
+      </motion.div>
+
+      <motion.div
+        className="flex flex-wrap items-center gap-3"
+        initial={animation.hide}
+        animate={animation.show}
+        transition={{ duration: 0.5, delay: 0.2 }}
       >
         {website && (
-          <Link
-            href={website}
-            className={cn(buttonVariants(), 'group')}
-            target="_blank"
-          >
-            Visit Website
-            <ArrowUpRightIcon className="ml-2 size-5" />
-          </Link>
+          <Button variant="default" size="lg" className="gap-2" asChild>
+            <Link href={website} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" />
+              Visit Website
+            </Link>
+          </Button>
         )}
         {github && (
-          <Link
-            href={github}
-            className={cn(buttonVariants(), 'group')}
-            target="_blank"
-          >
-            Github
-            <ArrowUpRightIcon className="ml-2 size-5" />
-          </Link>
+          <Button variant="outline" size="lg" className="gap-2" asChild>
+            <Link href={github} target="_blank" rel="noopener noreferrer">
+              <GithubIcon className="h-4 w-4" />
+              View Source Code
+            </Link>
+          </Button>
         )}
       </motion.div>
     </div>

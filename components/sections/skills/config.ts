@@ -1,36 +1,58 @@
 import { Skill } from '@/types/skill';
 import {
+  Code2,
   CodeIcon,
+  Computer,
   DatabaseIcon,
-  LayoutIcon,
+  Globe,
+  Settings,
   SmartphoneIcon,
-  MoreHorizontal,
-  Computer
+  Users
 } from 'lucide-react';
 
 const trimLen: number = -1; // 0 is accordion only, -1 is does not restrict the length
 
 const skills: Skill[] = [
   {
-    name: 'Web Development',
-    Icon: CodeIcon,
-    description: `Web Development involves creating websites and web applications that are both visually appealing and highly functional. It encompasses a variety of technologies, frameworks, and best practices to ensure a seamless user experience and efficient performance.\nThe following are some of the main technologies used in Web Development:\n\n - Next.js, React.js\n - TypeScript, JavaScript\n - Node.js, Express.js\n - TailwindCSS, Bootstrap, Material UI\n - Redux`
+    name: 'Programming Languages',
+    Icon: Code2,
+    description: `Proficient in modern programming languages that power web and mobile applications:\n\n - JavaScript\n - TypeScript\n - Dart`
   },
   {
-    name: 'Database Management',
-    Icon: DatabaseIcon,
-    description: `Database Management involves efficiently storing and organizing data. This skill covers a range of technologies, frameworks, and best practices to ensure data integrity, security, and performance.\n The following are some of the main technologies used in Database Management:\n\n - MongoDB\n - PostgreSQL\n - Cloud FireStore`
+    name: 'Frontend Development',
+    Icon: Globe,
+    description: `Expertise in creating responsive, interactive, and user-friendly interfaces using modern frameworks and libraries:\n\n - React.js\n - Next.js\n - TailwindCSS\n - Material-UI\n - Bootstrap`
+  },
+  {
+    name: 'Backend Development',
+    Icon: CodeIcon,
+    description: `Experience building robust server-side applications and APIs to support web and mobile applications:\n\n - Node.js\n - Express.js\n - Nest.js`
   },
   {
     name: 'Mobile Development',
     Icon: SmartphoneIcon,
-    description: `Mobile Development entails crafting apps for smartphones and tablets that are both visually appealing and highly functional. It includes a variety of technologies, frameworks, and best practices to provide a seamless user experience on mobile devices\nThe following are some of the main technologies used in Mobile Development:\n\n - Flutter, Dart, BLoC\n - Firebase`
+    description: `Skilled in developing cross-platform mobile applications with a focus on performance and user experience:\n\n - Flutter`
   },
   {
-    name: 'More',
+    name: 'Database Management',
+    Icon: DatabaseIcon,
+    description: `Knowledge of various database systems for efficient data storage, retrieval, and management:\n\n - MongoDB\n - PostgreSQL\n - Firebase`
+  },
+  {
+    name: 'Tools & Platforms',
+    Icon: Settings,
+    description: `Proficient with industry-standard tools and platforms that enhance development workflow and collaboration:\n\n - Git\n - GitHub\n - Notion\n - Figma\n - Docker\n - CI/CD`
+  },
+  {
+    name: 'Methodologies',
     Icon: Computer,
-    description: `Skills that encompasses a variety of technologies, frameworks, and best practices to ensure a seamless user experience and efficient performance.\n\n - Git, GitHub\n - RESTful APIs\n - Agile Methodologies\n - Responsive Web Design\n - Debugging\n - Problem-Solving\n - Communication\n - Teamwork\n - Continuous Learning`
+    description: `Experience with software development methodologies and practices that ensure efficient project delivery:\n\n - Agile\n - Project Management\n - SDLC (Software Development Life Cycle)`
+  },
+  {
+    name: 'Soft Skills',
+    Icon: Users,
+    description: `Essential interpersonal abilities that complement technical skills and facilitate effective teamwork:\n\n - Communication\n - Collaboration\n - Teamwork\n - Problem-Solving`
   }
 ];
 
-export { trimLen, skills };
+export { skills, trimLen };

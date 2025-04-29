@@ -10,6 +10,10 @@ export type ProjectMetadata = {
   techstack: Array<{ label: string }>;
   selected: boolean;
   slug: string;
+  date?: string;
+  category?: string;
+  client?: string;
+  gallery?: string[];
 };
 
 export type BlogMetadata = {

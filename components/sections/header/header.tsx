@@ -1,11 +1,10 @@
 'use client';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { CodeIcon } from 'lucide-react';
-import styles from './style.module.scss';
-import { opacity, background } from './anim';
+import { useState } from 'react';
+import { background, opacity } from './anim';
 import Nav from './nav';
+import styles from './style.module.scss';
 
 import { metadata as meta } from '@/app/config';
 
@@ -25,6 +24,7 @@ const Header = ({ loader }: HeaderProps) => {
       animate={{
         y: 0
       }}
+      style={{ zIndex: 9999 }}
       transition={{
         delay: loader ? 3.5 : 0, // 3.5 for loading, .5 can be added for delay
         duration: 0.8

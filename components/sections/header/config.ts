@@ -22,6 +22,11 @@ const links: Link[] = [
     thumbnail: 'skills.jpg'
   },
   {
+    title: 'Blog',
+    href: '/blog',
+    thumbnail: 'blog.jpg'
+  },
+  {
     title: 'Testimonials',
     href: '#testimonials',
     thumbnail: 'testimonials.jpg'

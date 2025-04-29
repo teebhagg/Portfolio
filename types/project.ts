@@ -3,4 +3,8 @@ export interface Project {
   slug: string;
   description?: string;
   thumbnail?: string;
+  category?: string;
+  tags?: string[];
+  liveUrl?: string;
+  githubUrl?: string;
 }
