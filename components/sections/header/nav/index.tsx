@@ -1,11 +1,10 @@
-import { useState } from 'react';
+import ModeToggle from '@/components/mode-toggle';
 import { motion } from 'framer-motion';
-import styles from './style.module.scss';
+import { useState } from 'react';
 import { height } from '../anim';
 import Body from './body/body';
-import Footer from './footer/footer';
 import Image from './image/image';
-import ModeToggle from '@/components/mode-toggle';
+import styles from './style.module.scss';
 
 import { links } from '@/components/sections/header/config';
 
@@ -45,8 +44,9 @@ const Index: React.FC<IndexProps> = ({ setIsActive }) => {
         <Image
           src={links[selectedLink.index].thumbnail}
           isActive={selectedLink.isActive}
+          alt={links[selectedLink.index].title}
         />
-        <div className="absolute bottom-0 right-0 mb-auto">
+        <div className="absolute bottom-0 right-0 z-50 mb-auto">
           <ModeToggle />
         </div>
       </div>

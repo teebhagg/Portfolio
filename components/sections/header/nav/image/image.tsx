@@ -7,9 +7,10 @@ import { opacity } from '../../anim';
 interface IndexProps {
   src: string;
   isActive: boolean;
+  alt: string;
 }
 
-const Index: React.FC<IndexProps> = ({ src, isActive }) => {
+const Index: React.FC<IndexProps> = ({ src, isActive, alt }) => {
   return (
     <motion.div
       variants={opacity}
@@ -20,7 +21,7 @@ const Index: React.FC<IndexProps> = ({ src, isActive }) => {
       <Image
         src={`/images/nav/${src}`}
         fill={true}
-        alt={'An image to describe the selected link'}
+        alt={alt}
         // priority={true}
       />
     </motion.div>

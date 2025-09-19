@@ -1,14 +1,15 @@
-import { FooterItem } from '@/types/footer';
+import type { FooterItem } from '@/types/footer';
 
 const footer: FooterItem[] = [
   {
-    title: 'Blog',
-    href: 'https://blog.example.com'
-  },
-  {
-    title: 'Newsletter',
-    href: 'https://newsletter.example.com'
+    title: 'Home',
+    href: '/'
   }
 ];
+
+export const copyright = {
+  // Hardcoded to 2024 as this represents the project's inception year
+  startYear: 2021
+};
 
 export { footer };

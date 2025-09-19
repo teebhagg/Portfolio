@@ -18,9 +18,13 @@ export type ProjectMetadata = {
 
 export type BlogMetadata = {
   title: string;
+  description: string;
   date: string;
-  modifiedTime: string;
-  summary: string;
+  author: string;
+  category?: string;
+  tags?: string[];
+  featured?: boolean;
+  thumbnail?: string;
   slug: string;
 };
 

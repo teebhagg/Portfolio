@@ -1,32 +1,33 @@
-import React from 'react';
-import Link from 'next/link';
-import { metadata as meta } from '@/app/config';
+'use client';
 
-import { footer } from '@/components/sections/footer/config';
+import { motion, useScroll, useTransform } from 'motion/react';
+import { useRef } from 'react';
 
-function Footer() {
+import Content from './content';
+
+export default function Footer() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ['start end', 'end start']
+  });
+
+  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0.5, 1, 0.5]);
+
   return (
-    <footer className="flex w-full shrink-0 flex-col items-center justify-center gap-2 border-t border-border px-4 py-6 sm:flex-row md:px-6">
-      <p className="text-xs text-gray-500 dark:text-gray-400">
-        © {new Date().getFullYear()} {meta.author.name}. All rights reserved.
-      </p>
-      {/* <nav className="flex gap-4 sm:ml-auto sm:gap-6">
-        {footer.map((link, index) => {
-          const { title, href } = link;
-
-          return (
-            <Link
-              className="text-xs underline-offset-4 hover:underline"
-              href={href}
-              key={`l_${index}`}
-            >
-              {title}
-            </Link>
-          );
-        })}
-      </nav> */}
-    </footer>
+    <div
+      ref={containerRef}
+      className="relative h-[400px] md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
+      style={{
+        clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)'
+      }}
+    >
+      <motion.div
+        className="fixed bottom-0 h-[400px] w-full md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
+        style={{ opacity }}
+      >
+        <Content />
+      </motion.div>
+    </div>
   );
 }
-
-export default Footer;

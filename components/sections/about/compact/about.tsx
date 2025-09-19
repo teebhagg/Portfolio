@@ -22,7 +22,11 @@ function About() {
                 always eager to learn new things and take on new challenges.
               </p>
               <Button asChild>
-                <Link href="resume.pdf" target="_blank">
+                <Link
+                  href="resume.pdf"
+                  target="_blank"
+                  download={'JOSHUA ANSAH CV - Full Stack.pdf'}
+                >
                   View Resume <ArrowUpRightIcon className="ml-2 size-5" />
                 </Link>
               </Button>

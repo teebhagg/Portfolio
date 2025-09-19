@@ -1,0 +1,777 @@
+---
+title: 'Digital Ocean Mastery Part 3: Docker Installation and Configuration'
+description: 'Master Docker installation on Digital Ocean droplets. Learn containerization best practices, Docker Compose, and container management for production environments.'
+date: 'September 16, 2025'
+author: 'Joshua Ansah'
+category: 'DevOps'
+tags:
+  [
+    'Docker',
+    'Containers',
+    'Digital Ocean',
+    'Docker Compose',
+    'Containerization'
+  ]
+featured: true
+thumbnail: '/images/blog/do-part-3.jpg'
+---
+
+# Digital Ocean Mastery Part 3: Docker Installation and Configuration
+
+Welcome to Part 3 of our Digital Ocean mastery series! Building upon our secure droplet and PostgreSQL setup, we'll now install and configure Docker for containerized application deployment. This foundation will enable us to deploy scalable, isolated applications efficiently.
+
+## 🎯 What You'll Learn
+
+In this comprehensive guide, we'll cover:
+
+- Docker installation and configuration on Ubuntu
+- Docker Compose setup and best practices
+- Container networking and volume management
+- Security configurations for production
+- Multi-environment container management
+- Monitoring and logging for containerized applications
+- Docker registry setup and management
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+- Completed [Part 1](/blog/digital-ocean-part-1-droplet-storage-setup) and [Part 2](/blog/digital-ocean-part-2-postgresql-setup)
+- SSH access to your Digital Ocean droplet
+- Basic understanding of containerization concepts
+- Familiarity with YAML syntax (for Docker Compose)
+
+## 🐳 Step 1: Installing Docker
+
+### Remove Old Docker Versions
+
+```bash
+# Connect to your droplet
+ssh deploy@YOUR_DROPLET_IP
+
+# Remove any old Docker installations
+sudo apt remove docker docker-engine docker.io containerd runc
+```
+
+### Install Docker Using Official Repository
+
+```bash
+# Update package index
+sudo apt update
+
+# Install required packages
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+
+# Add Docker's official GPG key
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+# Add Docker repository
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Update package index again
+sudo apt update
+
+# Install Docker Engine
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+```
+
+### Verify Docker Installation
+
+```bash
+# Check Docker version
+docker --version
+
+# Check if Docker service is running
+sudo systemctl status docker
+
+# Run hello-world container
+sudo docker run hello-world
+```
+
+## 👥 Step 2: Docker User Configuration
+
+### Add User to Docker Group
+
+```bash
+# Add current user to docker group
+sudo usermod -aG docker $USER
+
+# Apply group changes (or logout and login again)
+newgrp docker
+
+# Test Docker without sudo
+docker run hello-world
+```
+
+### Configure Docker to Start on Boot
+
+```bash
+# Enable Docker service
+sudo systemctl enable docker
+
+# Verify it's enabled
+sudo systemctl is-enabled docker
+```
+
+## 🐙 Step 3: Installing Docker Compose
+
+### Install Docker Compose
+
+```bash
+# Get latest version number (or specify a version)
+DOCKER_COMPOSE_VERSION=$(curl -s https://api.github.com/repos/docker/compose/releases/latest | grep 'tag_name' | cut -d\" -f4)
+
+# Download Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
+# Make it executable
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Create symlink for easier access
+sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+
+# Verify installation
+docker-compose --version
+```
+
+## 📁 Step 4: Docker Directory Structure Setup
+
+### Create Docker Project Structure
+
+```bash
+# Create Docker directories on block storage
+mkdir -p /mnt/app-data/docker/{
+    containers,
+    volumes,
+    networks,
+    configs,
+    logs,
+    registry
+}
+
+# Create environment-specific directories
+mkdir -p /mnt/app-data/docker/containers/{production,staging,development}
+
+# Create symlink for easier access
+ln -s /mnt/app-data/docker ~/docker
+
+# Set up volume directories
+mkdir -p /mnt/app-data/docker/volumes/{postgres-data,app-logs,nginx-conf,ssl-certs}
+```
+
+### Configure Docker Data Directory
+
+```bash
+# Create Docker daemon configuration
+sudo mkdir -p /etc/docker
+
+sudo tee /etc/docker/daemon.json > /dev/null <<EOF
+{
+    "data-root": "/mnt/app-data/docker",
+    "storage-driver": "overlay2",
+    "log-driver": "json-file",
+    "log-opts": {
+        "max-size": "10m",
+        "max-file": "3"
+    },
+    "default-ulimits": {
+        "nofile": {
+            "Name": "nofile",
+            "Hard": 64000,
+            "Soft": 64000
+        }
+    }
+}
+EOF
+
+# Restart Docker to apply changes
+sudo systemctl restart docker
+
+# Verify new data directory
+docker info | grep "Docker Root Dir"
+```
+
+## 🔒 Step 5: Docker Security Configuration
+
+### Configure Docker Security Options
+
+```bash
+# Edit Docker daemon configuration for security
+sudo nano /etc/docker/daemon.json
+```
+
+Update with security settings:
+
+```json
+{
+  "data-root": "/mnt/app-data/docker",
+  "storage-driver": "overlay2",
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "default-ulimits": {
+    "nofile": {
+      "Name": "nofile",
+      "Hard": 64000,
+      "Soft": 64000
+    }
+  },
+  "userns-remap": "default",
+  "no-new-privileges": true,
+  "seccomp-profile": "/etc/docker/seccomp.json",
+  "apparmor-profile": "docker-default"
+}
+```
+
+### Configure User Namespace Remapping
+
+```bash
+# Create subuid and subgid entries
+echo "dockremap:165536:65536" | sudo tee -a /etc/subuid
+echo "dockremap:165536:65536" | sudo tee -a /etc/subgid
+
+# Restart Docker
+sudo systemctl restart docker
+```
+
+### Create Security Profiles
+
+```bash
+# Download default seccomp profile
+sudo curl -L https://raw.githubusercontent.com/moby/moby/master/profiles/seccomp/default.json -o /etc/docker/seccomp.json
+```
+
+## 🌐 Step 6: Docker Networking Configuration
+
+### Create Custom Networks
+
+```bash
+# Create custom bridge networks for different environments
+docker network create --driver bridge production-network
+docker network create --driver bridge staging-network
+docker network create --driver bridge development-network
+
+# Create an isolated network for databases
+docker network create --driver bridge --internal database-network
+
+# List networks
+docker network ls
+```
+
+### Configure Network Security
+
+```bash
+# Create network configuration file
+mkdir -p ~/docker/configs
+
+cat > ~/docker/configs/network-security.yml <<EOF
+# Network security configuration
+networks:
+  production-network:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_icc: "false"
+      com.docker.network.bridge.enable_ip_masquerade: "true"
+      com.docker.network.driver.mtu: "1500"
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
+
+  database-network:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+EOF
+```
+
+## 📦 Step 7: Creating Docker Compose Templates
+
+### Basic Application Template
+
+```bash
+# Create a template for Node.js applications
+cat > ~/docker/configs/nodejs-template.yml <<EOF
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: \${APP_NAME}-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=\${NODE_ENV}
+      - DATABASE_URL=\${DATABASE_URL}
+      - PORT=\${PORT}
+    ports:
+      - "\${PORT}:3000"
+    volumes:
+      - /mnt/app-data/docker/volumes/app-logs:/app/logs
+      - /mnt/app-data/docker/volumes/app-uploads:/app/uploads
+    networks:
+      - production-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: \${APP_NAME}-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass \${REDIS_PASSWORD}
+    volumes:
+      - /mnt/app-data/docker/volumes/redis-data:/data
+    networks:
+      - production-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: \${APP_NAME}-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /mnt/app-data/docker/volumes/nginx-conf:/etc/nginx/conf.d
+      - /mnt/app-data/docker/volumes/ssl-certs:/etc/ssl/certs
+      - /mnt/app-data/docker/volumes/nginx-logs:/var/log/nginx
+    networks:
+      - production-network
+    depends_on:
+      - app
+
+networks:
+  production-network:
+    external: true
+
+volumes:
+  app-logs:
+    driver: local
+  redis-data:
+    driver: local
+  nginx-conf:
+    driver: local
+  ssl-certs:
+    driver: local
+EOF
+```
+
+### Database Connection Template
+
+```bash
+# Create PostgreSQL connection template
+cat > ~/docker/configs/postgres-external.yml <<EOF
+version: '3.8'
+
+services:
+  app:
+    image: node:18-alpine
+    container_name: \${APP_NAME}-app
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://\${DB_USER}:\${DB_PASSWORD}@\${DB_HOST}:5432/\${DB_NAME}?sslmode=require
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - production-network
+
+networks:
+  production-network:
+    external: true
+EOF
+```
+
+## 🔍 Step 8: Docker Monitoring and Logging
+
+### Install Docker System Monitoring
+
+```bash
+# Create monitoring compose file
+cat > ~/docker/configs/monitoring.yml <<EOF
+version: '3.8'
+
+services:
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /mnt/app-data/docker/volumes/portainer-data:/data
+    networks:
+      - production-network
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_SCHEDULE=0 0 4 * * *
+    networks:
+      - production-network
+
+networks:
+  production-network:
+    external: true
+EOF
+
+# Start monitoring services
+cd ~/docker/configs
+docker-compose -f monitoring.yml up -d
+```
+
+### Configure Container Logging
+
+```bash
+# Create logging configuration
+cat > ~/docker/configs/logging.yml <<EOF
+version: '3.8'
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+    labels: "service,environment"
+
+services:
+  app:
+    image: your-app:latest
+    container_name: app
+    logging: *default-logging
+    labels:
+      - "service=app"
+      - "environment=production"
+EOF
+```
+
+## 🛠️ Step 9: Docker Maintenance Scripts
+
+### Create Container Management Scripts
+
+```bash
+# Container cleanup script
+cat > ~/docker-cleanup.sh <<EOF
+#!/bin/bash
+
+echo "Starting Docker cleanup..."
+
+# Remove stopped containers
+docker container prune -f
+
+# Remove unused images
+docker image prune -a -f
+
+# Remove unused volumes
+docker volume prune -f
+
+# Remove unused networks
+docker network prune -f
+
+# Remove build cache
+docker builder prune -f
+
+# Show disk usage after cleanup
+echo "Docker disk usage after cleanup:"
+docker system df
+
+echo "Cleanup completed at \$(date)"
+EOF
+
+chmod +x ~/docker-cleanup.sh
+```
+
+### Docker Health Check Script
+
+```bash
+# Health monitoring script
+cat > ~/docker-monitor.sh <<EOF
+#!/bin/bash
+
+echo "=== Docker System Status ==="
+echo "Date: \$(date)"
+echo
+
+echo "=== Running Containers ==="
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+echo
+
+echo "=== Container Health Status ==="
+docker ps --format "table {{.Names}}\t{{.Status}}" | grep -v "NAMES"
+echo
+
+echo "=== Docker Resource Usage ==="
+docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}\t{{.BlockIO}}"
+echo
+
+echo "=== Docker Disk Usage ==="
+docker system df
+echo
+
+echo "=== Failed Containers (if any) ==="
+docker ps -a --filter "status=exited" --filter "status=dead" --format "table {{.Names}}\t{{.Status}}\t{{.CreatedAt}}"
+EOF
+
+chmod +x ~/docker-monitor.sh
+```
+
+### Backup Script for Docker Volumes
+
+```bash
+# Docker backup script
+cat > ~/docker-backup.sh <<EOF
+#!/bin/bash
+
+BACKUP_DIR="/mnt/app-data/backups/docker"
+DATE=\$(date +%Y%m%d_%H%M%S)
+
+# Create backup directory
+mkdir -p "\$BACKUP_DIR"
+
+echo "Starting Docker backup..."
+
+# Backup Docker volumes
+docker run --rm -v /mnt/app-data/docker/volumes:/source -v "\$BACKUP_DIR:/backup" alpine tar czf "/backup/docker-volumes-\$DATE.tar.gz" -C /source .
+
+# Backup Docker configurations
+tar czf "\$BACKUP_DIR/docker-configs-\$DATE.tar.gz" -C ~/docker configs
+
+# List containers and their configurations
+docker ps -a --format "{{.Names}}\t{{.Image}}\t{{.Status}}" > "\$BACKUP_DIR/containers-\$DATE.txt"
+
+# Export Docker images (for critical custom images)
+# docker save your-custom-image:latest | gzip > "\$BACKUP_DIR/custom-image-\$DATE.tar.gz"
+
+echo "Backup completed: \$BACKUP_DIR"
+
+# Keep only last 7 days of backups
+find "\$BACKUP_DIR" -name "*.tar.gz" -mtime +7 -delete
+find "\$BACKUP_DIR" -name "*.txt" -mtime +7 -delete
+EOF
+
+chmod +x ~/docker-backup.sh
+```
+
+### Automate Maintenance Tasks
+
+```bash
+# Add to crontab
+crontab -e
+
+# Add these lines:
+# Daily cleanup at 2 AM
+0 2 * * * /home/deploy/docker-cleanup.sh >> /mnt/app-data/docker/logs/cleanup.log 2>&1
+
+# Daily backup at 3 AM
+0 3 * * * /home/deploy/docker-backup.sh >> /mnt/app-data/docker/logs/backup.log 2>&1
+
+# Monitor containers every 15 minutes
+*/15 * * * * /home/deploy/docker-monitor.sh >> /mnt/app-data/docker/logs/monitor.log 2>&1
+```
+
+## 🔐 Step 10: Docker Registry Setup (Optional)
+
+### Set Up Private Registry
+
+```bash
+# Create registry configuration
+cat > ~/docker/configs/registry.yml <<EOF
+version: '3.8'
+
+services:
+  registry:
+    image: registry:2
+    container_name: docker-registry
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /data
+      REGISTRY_AUTH: htpasswd
+      REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
+      REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
+    volumes:
+      - /mnt/app-data/docker/registry/data:/data
+      - /mnt/app-data/docker/registry/auth:/auth
+    networks:
+      - production-network
+
+networks:
+  production-network:
+    external: true
+EOF
+
+# Create registry authentication
+mkdir -p /mnt/app-data/docker/registry/auth
+docker run --rm --entrypoint htpasswd httpd:2 -Bbn admin your_registry_password > /mnt/app-data/docker/registry/auth/htpasswd
+
+# Start registry
+cd ~/docker/configs
+docker-compose -f registry.yml up -d
+```
+
+## 🧪 Step 11: Testing Docker Installation
+
+### Comprehensive Test Script
+
+```bash
+# Create comprehensive test script
+cat > ~/test-docker.sh <<EOF
+#!/bin/bash
+
+echo "=== Docker Installation Test ==="
+
+# Test 1: Docker version and info
+echo "1. Docker Version:"
+docker --version
+docker-compose --version
+
+# Test 2: Docker service status
+echo "2. Docker Service Status:"
+systemctl is-active docker
+
+# Test 3: User permissions
+echo "3. User Permissions Test:"
+docker run --rm hello-world
+
+# Test 4: Network creation and management
+echo "4. Network Test:"
+docker network ls | grep production-network
+
+# Test 5: Volume management
+echo "5. Volume Test:"
+docker volume create test-volume
+docker volume ls | grep test-volume
+docker volume rm test-volume
+
+# Test 6: Container lifecycle
+echo "6. Container Lifecycle Test:"
+docker run -d --name test-nginx nginx:alpine
+sleep 5
+docker ps | grep test-nginx
+docker stop test-nginx
+docker rm test-nginx
+
+# Test 7: Docker Compose
+echo "7. Docker Compose Test:"
+cd ~/docker/configs
+docker-compose -f monitoring.yml ps
+
+# Test 8: Resource monitoring
+echo "8. Resource Usage:"
+docker system df
+
+echo "=== All Tests Completed ==="
+EOF
+
+chmod +x ~/test-docker.sh
+./test-docker.sh
+```
+
+## 🎉 What You've Accomplished
+
+Congratulations! You now have a production-ready Docker environment with:
+
+✅ **Docker Engine**: Latest stable version installed and configured  
+✅ **Docker Compose**: For multi-container application management  
+✅ **Security Hardening**: User namespace remapping and security profiles  
+✅ **Custom Networks**: Isolated networks for different environments  
+✅ **Volume Management**: Persistent storage on block storage  
+✅ **Monitoring Tools**: Portainer and Watchtower for container management  
+✅ **Automated Maintenance**: Cleanup, backup, and monitoring scripts  
+✅ **Private Registry**: Optional private Docker registry setup
+
+### Key Configuration Files
+
+```bash
+# Docker daemon configuration
+/etc/docker/daemon.json
+
+# Docker data directory
+/mnt/app-data/docker/
+
+# Compose templates
+~/docker/configs/
+
+# Maintenance scripts
+~/docker-cleanup.sh
+~/docker-monitor.sh
+~/docker-backup.sh
+```
+
+## 🔗 Quick Reference Commands
+
+```bash
+# Docker basics
+docker ps                    # List running containers
+docker images               # List images
+docker logs <container>     # View container logs
+docker exec -it <container> /bin/sh  # Enter container
+
+# Docker Compose
+docker-compose up -d        # Start services in background
+docker-compose down         # Stop and remove services
+docker-compose logs -f      # Follow logs
+docker-compose ps           # List services
+
+# Maintenance
+./docker-cleanup.sh         # Clean up Docker resources
+./docker-monitor.sh         # Monitor container health
+./docker-backup.sh          # Backup volumes and configs
+
+# Monitoring
+docker stats                # Real-time resource usage
+docker system df            # Disk usage
+docker system events        # Docker events
+```
+
+## 💡 Best Practices Summary
+
+1. **Resource Limits**: Always set memory and CPU limits for containers
+2. **Health Checks**: Implement health checks for all services
+3. **Logging**: Configure centralized logging with log rotation
+4. **Security**: Use non-root users in containers when possible
+5. **Networks**: Use custom networks instead of default bridge
+6. **Volumes**: Store persistent data on named volumes
+7. **Updates**: Regularly update base images and containers
+8. **Monitoring**: Monitor container performance and health
+9. **Backups**: Regular backups of volumes and configurations
+10. **Documentation**: Document your container configurations
+
+## 🔮 Coming Up in Part 4
+
+In the next part of our series, we'll:
+
+- Deploy a Node.js application using Docker
+- Set up GitHub Actions for automated deployments
+- Configure CI/CD pipelines
+- Implement zero-downtime deployments
+- Set up application monitoring and logging
+
+---
+
+_Ready to deploy your first containerized application? Let's move on to automated deployments!_
+
+**Next**: [Digital Ocean Mastery Part 4: Node.js Deployment with GitHub Actions](/blog/digital-ocean-part-4-nodejs-github-actions)

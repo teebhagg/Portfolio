@@ -1,0 +1,1072 @@
+---
+title: 'Digital Ocean Mastery Part 4: Node.js Deployment with GitHub Actions'
+description: 'Deploy Node.js applications to Digital Ocean using GitHub Actions CI/CD. Automate your deployment pipeline with zero-downtime deployments and monitoring.'
+date: 'September 15, 2025'
+author: 'Joshua Ansah'
+category: 'DevOps'
+tags:
+  [
+    'Node.js',
+    'GitHub Actions',
+    'CI/CD',
+    'Digital Ocean',
+    'Deployment',
+    'Automation'
+  ]
+featured: true
+thumbnail: '/images/blog/do-part-4.jpg'
+---
+
+# Digital Ocean Mastery Part 4: Node.js Deployment with GitHub Actions
+
+Welcome to Part 4 of our Digital Ocean mastery series! Building on our containerized environment, we'll now deploy a Node.js application using GitHub Actions for automated CI/CD. This setup will enable zero-downtime deployments with comprehensive monitoring.
+
+## 🎯 What You'll Learn
+
+In this comprehensive guide, we'll cover:
+
+- Setting up a Node.js application for containerized deployment
+- Creating GitHub Actions workflows for CI/CD
+- Implementing zero-downtime deployment strategies
+- Configuring environment variables and secrets
+- Setting up application monitoring and health checks
+- Implementing rollback strategies
+- Performance optimization and scaling
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+- Completed [Parts 1-3](/blog/digital-ocean-part-1-droplet-storage-setup) of this series
+- A Node.js application in a GitHub repository
+- Basic knowledge of Node.js and Express.js
+- Understanding of Docker concepts
+- GitHub account with repository access
+
+## 🚀 Step 1: Preparing the Node.js Application
+
+### Sample Application Structure
+
+Let's create a production-ready Node.js application structure:
+
+```bash
+# Connect to your droplet
+ssh deploy@YOUR_DROPLET_IP
+
+# Create application directory
+mkdir -p /mnt/app-data/apps/production/nodejs-app
+cd /mnt/app-data/apps/production/nodejs-app
+```
+
+Create a sample Node.js application:
+
+```javascript
+// package.json
+{
+  "name": "nodejs-production-app",
+  "version": "1.0.0",
+  "description": "Production Node.js app with Docker and CI/CD",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "lint": "eslint src/",
+    "build": "echo 'Build completed'",
+    "health-check": "curl -f http://localhost:3000/health || exit 1"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "helmet": "^7.0.0",
+    "cors": "^2.8.5",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
+    "redis": "^4.6.7",
+    "compression": "^1.7.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.6.2",
+    "eslint": "^8.45.0",
+    "supertest": "^6.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+```
+
+### Create Application Files
+
+```javascript
+// src/server.js
+const express = require('express');
+const helmet = require('helmet');
+const cors = require('cors');
+const morgan = require('morgan');
+const compression = require('compression');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(compression());
+app.use(morgan('combined'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.APP_VERSION || '1.0.0',
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// API routes
+app.get('/api/status', (req, res) => {
+  res.json({
+    message: 'API is running',
+    environment: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Default route
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Node.js Production App',
+    version: process.env.APP_VERSION || '1.0.0'
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : {}
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    message: 'Route not found'
+  });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received. Shutting down gracefully...');
+  server.close(() => {
+    console.log('Process terminated');
+  });
+});
+
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+});
+
+module.exports = app;
+```
+
+### Create Dockerfile
+
+```dockerfile
+# Dockerfile
+FROM node:18-alpine AS base
+
+# Install security updates
+RUN apk update && apk upgrade && apk add --no-cache curl
+
+# Create app directory
+WORKDIR /app
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodeuser -u 1001
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+FROM base AS dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Development stage
+FROM base AS development
+RUN npm ci
+COPY . .
+USER nodeuser
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
+# Production stage
+FROM base AS production
+COPY --from=dependencies /app/node_modules ./node_modules
+COPY . .
+
+# Set ownership
+RUN chown -R nodeuser:nodejs /app
+USER nodeuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+### Create Docker Compose Configuration
+
+```yaml
+# docker-compose.production.yml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: nodejs-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - APP_VERSION=${APP_VERSION}
+    ports:
+      - '3000:3000'
+    volumes:
+      - /mnt/app-data/docker/volumes/app-logs:/app/logs
+    networks:
+      - production-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: nodejs-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - /mnt/app-data/docker/volumes/redis-data:/data
+    networks:
+      - production-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 30s
+      timeout: 3s
+      retries: 5
+
+  nginx:
+    image: nginx:alpine
+    container_name: nodejs-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /mnt/app-data/docker/volumes/ssl-certs:/etc/ssl/certs:ro
+      - /mnt/app-data/docker/volumes/nginx-logs:/var/log/nginx
+    networks:
+      - production-network
+    depends_on:
+      - app
+
+networks:
+  production-network:
+    external: true
+```
+
+### Create Nginx Configuration
+
+```nginx
+# nginx.conf
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    # Logging
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log warn;
+
+    # Basic settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 10M;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    upstream app {
+        server app:3000;
+    }
+
+    server {
+        listen 80;
+        server_name _;
+
+        # Health check endpoint for load balancer
+        location /health {
+            proxy_pass http://app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Main application
+        location / {
+            proxy_pass http://app;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+        }
+    }
+}
+```
+
+## 🔐 Step 2: Setting Up GitHub Repository
+
+### Create Repository Structure
+
+```bash
+# In your local development environment
+mkdir nodejs-production-app
+cd nodejs-production-app
+
+# Initialize git repository
+git init
+git remote add origin https://github.com/your-username/nodejs-production-app.git
+
+# Create directory structure
+mkdir -p .github/workflows
+mkdir -p src
+mkdir -p tests
+mkdir -p scripts
+```
+
+### Create Environment Configuration
+
+```bash
+# .env.example
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgresql://user:password@host:5432/database?sslmode=require
+REDIS_URL=redis://:password@localhost:6379
+REDIS_PASSWORD=your_redis_password
+APP_VERSION=1.0.0
+```
+
+### Add Git Configuration
+
+```bash
+# .gitignore
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+logs/
+*.log
+.DS_Store
+coverage/
+.nyc_output/
+.cache/
+dist/
+```
+
+## ⚙️ Step 3: Creating GitHub Actions Workflow
+
+### Main Deployment Workflow
+
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Digital Ocean
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Digital Ocean
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            # Set variables
+            export IMAGE_TAG="${{ needs.build.outputs.image-tag }}"
+            export APP_VERSION="${{ github.sha }}"
+
+            # Navigate to app directory
+            cd /mnt/app-data/apps/production/nodejs-app
+
+            # Pull latest code
+            git pull origin main
+
+            # Login to GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull new image
+            docker pull $IMAGE_TAG
+
+            # Run deployment script
+            ./scripts/deploy.sh $IMAGE_TAG
+```
+
+### Deployment Script
+
+```bash
+# scripts/deploy.sh
+#!/bin/bash
+
+set -e
+
+IMAGE_TAG=$1
+if [ -z "$IMAGE_TAG" ]; then
+    echo "Usage: $0 <image_tag>"
+    exit 1
+fi
+
+echo "Starting deployment with image: $IMAGE_TAG"
+
+# Load environment variables
+if [ -f .env.production ]; then
+    export $(cat .env.production | xargs)
+fi
+
+# Backup current containers (for rollback)
+BACKUP_DIR="/mnt/app-data/backups/deployments/$(date +%Y%m%d_%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+
+# Export current container state
+docker-compose -f docker-compose.production.yml config > "$BACKUP_DIR/docker-compose-backup.yml"
+echo "$IMAGE_TAG" > "$BACKUP_DIR/image-tag.txt"
+
+# Health check function
+health_check() {
+    local container_name=$1
+    local max_attempts=30
+    local attempt=1
+
+    echo "Waiting for $container_name to be healthy..."
+
+    while [ $attempt -le $max_attempts ]; do
+        if docker exec $container_name curl -f http://localhost:3000/health > /dev/null 2>&1; then
+            echo "$container_name is healthy!"
+            return 0
+        fi
+
+        echo "Attempt $attempt/$max_attempts failed. Retrying in 10 seconds..."
+        sleep 10
+        attempt=$((attempt + 1))
+    done
+
+    echo "$container_name failed health check after $max_attempts attempts"
+    return 1
+}
+
+# Blue-green deployment simulation
+echo "Stopping current containers..."
+docker-compose -f docker-compose.production.yml down
+
+echo "Starting new containers with image: $IMAGE_TAG"
+export APP_IMAGE=$IMAGE_TAG
+docker-compose -f docker-compose.production.yml up -d
+
+# Wait for containers to start
+sleep 15
+
+# Health check
+if health_check "nodejs-app"; then
+    echo "Deployment successful!"
+
+    # Clean up old images (keep last 3)
+    docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep "ghcr.io/${{ github.repository }}" | tail -n +4 | awk '{print $1}' | xargs -r docker rmi
+
+    # Log successful deployment
+    echo "$(date): Successful deployment of $IMAGE_TAG" >> /mnt/app-data/logs/deployments.log
+else
+    echo "Deployment failed! Rolling back..."
+
+    # Rollback
+    docker-compose -f docker-compose.production.yml down
+    docker-compose -f "$BACKUP_DIR/docker-compose-backup.yml" up -d
+
+    echo "$(date): Failed deployment of $IMAGE_TAG - rolled back" >> /mnt/app-data/logs/deployments.log
+    exit 1
+fi
+```
+
+## 🔑 Step 4: Setting Up GitHub Secrets
+
+### Required Secrets
+
+Add these secrets to your GitHub repository:
+
+```bash
+# Repository Settings > Secrets and variables > Actions
+
+DROPLET_IP=YOUR_DROPLET_IP_ADDRESS
+DROPLET_USER=deploy
+DROPLET_SSH_KEY=-----BEGIN OPENSSH PRIVATE KEY-----
+...your private key content...
+-----END OPENSSH PRIVATE KEY-----
+
+# Database credentials
+DATABASE_URL=postgresql://myapp_user:password@YOUR_DROPLET_IP:5432/myapp_production?sslmode=require
+REDIS_PASSWORD=your_redis_password
+```
+
+### Environment Variables on Droplet
+
+```bash
+# Create production environment file
+cat > /mnt/app-data/apps/production/nodejs-app/.env.production <<EOF
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgresql://myapp_user:secure_app_password@localhost:5432/myapp_production?sslmode=require
+REDIS_URL=redis://:your_redis_password@nodejs-redis:6379
+REDIS_PASSWORD=your_redis_password
+APP_VERSION=1.0.0
+EOF
+
+# Secure the file
+chmod 600 /mnt/app-data/apps/production/nodejs-app/.env.production
+```
+
+## 📊 Step 5: Monitoring and Logging Setup
+
+### Application Monitoring Script
+
+```bash
+# Create monitoring script
+cat > ~/monitor-app.sh <<EOF
+#!/bin/bash
+
+APP_NAME="nodejs-app"
+LOG_FILE="/mnt/app-data/logs/app-monitor.log"
+
+echo "=== Application Monitor Report - \$(date) ===" >> \$LOG_FILE
+
+# Check container status
+echo "Container Status:" >> \$LOG_FILE
+docker ps --filter "name=\$APP_NAME" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" >> \$LOG_FILE
+
+# Check application health
+echo "Health Check:" >> \$LOG_FILE
+if curl -f http://localhost/health > /dev/null 2>&1; then
+    echo "✅ Application is healthy" >> \$LOG_FILE
+else
+    echo "❌ Application health check failed" >> \$LOG_FILE
+
+    # Send alert (you can integrate with your preferred notification service)
+    echo "ALERT: Application health check failed at \$(date)" >> \$LOG_FILE
+fi
+
+# Check resource usage
+echo "Resource Usage:" >> \$LOG_FILE
+docker stats --no-stream --format "{{.Container}}: CPU {{.CPUPerc}}, Memory {{.MemUsage}}" \$APP_NAME >> \$LOG_FILE
+
+# Check logs for errors
+echo "Recent Errors:" >> \$LOG_FILE
+docker logs \$APP_NAME --since 5m 2>&1 | grep -i error | tail -5 >> \$LOG_FILE
+
+echo "================================" >> \$LOG_FILE
+echo "" >> \$LOG_FILE
+EOF
+
+chmod +x ~/monitor-app.sh
+
+# Add to crontab for monitoring every 5 minutes
+crontab -e
+# Add: */5 * * * * /home/deploy/monitor-app.sh
+```
+
+### Log Aggregation Setup
+
+```bash
+# Create log aggregation script
+cat > ~/aggregate-logs.sh <<EOF
+#!/bin/bash
+
+LOG_DIR="/mnt/app-data/logs"
+AGGREGATED_LOG="\$LOG_DIR/aggregated.log"
+DATE=\$(date +"%Y-%m-%d %H:%M:%S")
+
+# Collect logs from various sources
+echo "[\$DATE] === Log Aggregation Started ===" >> \$AGGREGATED_LOG
+
+# Application logs
+echo "[\$DATE] Application Logs:" >> \$AGGREGATED_LOG
+docker logs nodejs-app --since 1h --tail 100 >> \$AGGREGATED_LOG 2>&1
+
+# Nginx logs
+echo "[\$DATE] Nginx Access Logs:" >> \$AGGREGATED_LOG
+tail -50 /mnt/app-data/docker/volumes/nginx-logs/access.log >> \$AGGREGATED_LOG
+
+echo "[\$DATE] Nginx Error Logs:" >> \$AGGREGATED_LOG
+tail -20 /mnt/app-data/docker/volumes/nginx-logs/error.log >> \$AGGREGATED_LOG
+
+# System logs
+echo "[\$DATE] System Logs:" >> \$AGGREGATED_LOG
+journalctl --since "1 hour ago" --no-pager | tail -20 >> \$AGGREGATED_LOG
+
+echo "[\$DATE] === Log Aggregation Completed ===" >> \$AGGREGATED_LOG
+echo "" >> \$AGGREGATED_LOG
+
+# Rotate aggregated log if it gets too large (>100MB)
+if [ \$(stat -f%z "\$AGGREGATED_LOG" 2>/dev/null || stat -c%s "\$AGGREGATED_LOG") -gt 104857600 ]; then
+    mv "\$AGGREGATED_LOG" "\$AGGREGATED_LOG.old"
+    echo "[\$(date +"%Y-%m-%d %H:%M:%S")] Log rotated" > "\$AGGREGATED_LOG"
+fi
+EOF
+
+chmod +x ~/aggregate-logs.sh
+
+# Run hourly
+crontab -e
+# Add: 0 * * * * /home/deploy/aggregate-logs.sh
+```
+
+## 🚀 Step 6: Zero-Downtime Deployment Strategy
+
+### Advanced Deployment Script with Rolling Updates
+
+```bash
+# scripts/rolling-deploy.sh
+#!/bin/bash
+
+set -e
+
+IMAGE_TAG=$1
+BLUE_GREEN=${2:-false}
+
+if [ -z "$IMAGE_TAG" ]; then
+    echo "Usage: $0 <image_tag> [blue_green]"
+    exit 1
+fi
+
+echo "Starting rolling deployment with image: $IMAGE_TAG"
+
+# Configuration
+COMPOSE_FILE="docker-compose.production.yml"
+APP_SERVICE="app"
+BACKUP_DIR="/mnt/app-data/backups/deployments/$(date +%Y%m%d_%H%M%S)"
+
+# Create backup
+mkdir -p "$BACKUP_DIR"
+docker-compose -f $COMPOSE_FILE config > "$BACKUP_DIR/docker-compose-backup.yml"
+
+# Health check function
+health_check() {
+    local container_name=$1
+    local port=${2:-3000}
+    local endpoint=${3:-/health}
+    local max_attempts=30
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if curl -f "http://localhost:$port$endpoint" > /dev/null 2>&1; then
+            echo "$container_name is healthy!"
+            return 0
+        fi
+        sleep 5
+        attempt=$((attempt + 1))
+    done
+
+    echo "$container_name failed health check"
+    return 1
+}
+
+if [ "$BLUE_GREEN" = "true" ]; then
+    # Blue-Green Deployment
+    echo "Performing Blue-Green deployment..."
+
+    # Start new version alongside old
+    export APP_IMAGE=$IMAGE_TAG
+    export COMPOSE_PROJECT_NAME="green"
+    docker-compose -f $COMPOSE_FILE -p green up -d $APP_SERVICE
+
+    # Health check new version
+    if health_check "green_${APP_SERVICE}_1" 3001; then
+        # Switch traffic (update nginx config)
+        echo "Switching traffic to new version..."
+        # Update nginx upstream to point to new container
+        # This would require a more sophisticated nginx config
+
+        # Stop old version
+        docker-compose -f $COMPOSE_FILE -p blue down
+
+        echo "Blue-Green deployment completed successfully"
+    else
+        echo "New version failed health check, keeping old version"
+        docker-compose -f $COMPOSE_FILE -p green down
+        exit 1
+    fi
+else
+    # Rolling Update
+    echo "Performing rolling update..."
+
+    # Scale up
+    export APP_IMAGE=$IMAGE_TAG
+    docker-compose -f $COMPOSE_FILE up -d --scale $APP_SERVICE=2 $APP_SERVICE
+
+    # Wait for new container to be healthy
+    sleep 10
+
+    # Health check
+    NEW_CONTAINER=$(docker-compose -f $COMPOSE_FILE ps -q $APP_SERVICE | head -1)
+    if health_check $NEW_CONTAINER; then
+        # Scale down to 1 (removes old container)
+        docker-compose -f $COMPOSE_FILE up -d --scale $APP_SERVICE=1 $APP_SERVICE
+        echo "Rolling update completed successfully"
+    else
+        echo "New container failed health check, rolling back"
+        docker-compose -f $COMPOSE_FILE up -d --scale $APP_SERVICE=1 $APP_SERVICE
+        exit 1
+    fi
+fi
+
+# Cleanup old images
+docker image prune -f
+
+echo "Deployment completed at $(date)"
+```
+
+## 📈 Step 7: Performance Monitoring
+
+### Application Performance Monitoring
+
+```javascript
+// src/middleware/monitoring.js
+const performanceMonitoring = (req, res, next) => {
+  const start = Date.now();
+
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const logData = {
+      method: req.method,
+      url: req.url,
+      status: res.statusCode,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString(),
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    };
+
+    // Log performance data
+    console.log('PERFORMANCE:', JSON.stringify(logData));
+
+    // Alert on slow requests
+    if (duration > 5000) {
+      console.warn('SLOW_REQUEST:', JSON.stringify(logData));
+    }
+  });
+
+  next();
+};
+
+module.exports = { performanceMonitoring };
+```
+
+### System Resource Monitoring
+
+```bash
+# Create resource monitoring script
+cat > ~/resource-monitor.sh <<EOF
+#!/bin/bash
+
+ALERT_THRESHOLD_CPU=80
+ALERT_THRESHOLD_MEM=80
+LOG_FILE="/mnt/app-data/logs/resource-monitor.log"
+
+# Get system resources
+CPU_USAGE=\$(top -bn1 | grep "Cpu(s)" | awk '{print \$2}' | awk -F'%' '{print \$1}')
+MEM_USAGE=\$(free | grep Mem | awk '{printf("%.1f"), \$3/\$2 * 100.0}')
+DISK_USAGE=\$(df -h /mnt/app-data | tail -1 | awk '{print \$5}' | sed 's/%//')
+
+# Log current usage
+echo "\$(date): CPU: \${CPU_USAGE}%, Memory: \${MEM_USAGE}%, Disk: \${DISK_USAGE}%" >> \$LOG_FILE
+
+# Check thresholds and alert
+if (( \$(echo "\$CPU_USAGE > \$ALERT_THRESHOLD_CPU" | bc -l) )); then
+    echo "ALERT: High CPU usage: \${CPU_USAGE}%" >> \$LOG_FILE
+fi
+
+if (( \$(echo "\$MEM_USAGE > \$ALERT_THRESHOLD_MEM" | bc -l) )); then
+    echo "ALERT: High Memory usage: \${MEM_USAGE}%" >> \$LOG_FILE
+fi
+
+if [ "\$DISK_USAGE" -gt 85 ]; then
+    echo "ALERT: High Disk usage: \${DISK_USAGE}%" >> \$LOG_FILE
+fi
+
+# Docker container resources
+echo "Container Resources:" >> \$LOG_FILE
+docker stats --no-stream --format "{{.Container}}: CPU {{.CPUPerc}}, Memory {{.MemUsage}}" >> \$LOG_FILE
+echo "---" >> \$LOG_FILE
+EOF
+
+chmod +x ~/resource-monitor.sh
+
+# Run every 10 minutes
+crontab -e
+# Add: */10 * * * * /home/deploy/resource-monitor.sh
+```
+
+## ✅ Step 8: Testing the Complete Pipeline
+
+### Test Deployment Pipeline
+
+```bash
+# Create comprehensive test script
+cat > ~/test-deployment.sh <<EOF
+#!/bin/bash
+
+echo "=== Testing Complete Deployment Pipeline ==="
+
+# Test 1: Application health
+echo "1. Testing application health..."
+curl -f http://localhost/health
+echo "✅ Health check passed"
+
+# Test 2: API endpoints
+echo "2. Testing API endpoints..."
+curl -f http://localhost/api/status
+echo "✅ API endpoints working"
+
+# Test 3: Container status
+echo "3. Checking container status..."
+docker ps --filter "name=nodejs" --format "table {{.Names}}\t{{.Status}}"
+
+# Test 4: Log collection
+echo "4. Testing log collection..."
+docker logs nodejs-app --tail 10
+
+# Test 5: Resource usage
+echo "5. Checking resource usage..."
+docker stats --no-stream nodejs-app
+
+# Test 6: Database connectivity (if applicable)
+echo "6. Testing database connectivity..."
+docker exec nodejs-app node -e "
+const { Client } = require('pg');
+const client = new Client({ connectionString: process.env.DATABASE_URL });
+client.connect().then(() => {
+    console.log('✅ Database connection successful');
+    client.end();
+}).catch(err => {
+    console.log('❌ Database connection failed:', err.message);
+});
+"
+
+echo "=== All Tests Completed ==="
+EOF
+
+chmod +x ~/test-deployment.sh
+./test-deployment.sh
+```
+
+## 🎉 What You've Accomplished
+
+Congratulations! You now have a complete CI/CD pipeline with:
+
+✅ **Automated Testing**: GitHub Actions runs tests on every push  
+✅ **Containerized Deployment**: Docker-based application deployment  
+✅ **Zero-Downtime Deployments**: Rolling updates with health checks  
+✅ **Monitoring & Alerting**: Application and resource monitoring  
+✅ **Rollback Strategy**: Automatic rollback on deployment failures  
+✅ **Security**: Secure secrets management and container security  
+✅ **Performance Monitoring**: Application performance tracking  
+✅ **Log Aggregation**: Centralized logging with rotation
+
+### Deployment Flow Summary
+
+1. **Push to main branch** → Triggers GitHub Actions
+2. **Run tests** → Linting, unit tests, integration tests
+3. **Build Docker image** → Push to GitHub Container Registry
+4. **Deploy to server** → SSH to droplet, pull image, deploy
+5. **Health checks** → Verify application is running correctly
+6. **Monitor** → Continuous monitoring and alerting
+
+## 🔗 Quick Reference Commands
+
+```bash
+# Manual deployment
+cd /mnt/app-data/apps/production/nodejs-app
+./scripts/deploy.sh ghcr.io/username/repo:latest
+
+# Check application status
+curl http://localhost/health
+docker ps --filter "name=nodejs"
+
+# View logs
+docker logs nodejs-app -f
+tail -f /mnt/app-data/logs/app-monitor.log
+
+# Resource monitoring
+./resource-monitor.sh
+./monitor-app.sh
+
+# Emergency rollback
+docker-compose -f docker-compose.production.yml down
+# Restore from backup in /mnt/app-data/backups/deployments/
+```
+
+## 🔮 Coming Up in Part 5
+
+In the next part of our series, we'll:
+
+- Set up multiple environments (staging, development)
+- Deploy different branches to different environments
+- Configure environment-specific variables and resources
+- Implement branch-based deployment strategies
+- Set up environment promotion workflows
+
+---
+
+_Ready to manage multiple environments? Let's set up staging and development environments!_
+
+**Next**: [Digital Ocean Mastery Part 5: Multi-Environment Deployments](/blog/digital-ocean-part-5-multi-environment-deployments)

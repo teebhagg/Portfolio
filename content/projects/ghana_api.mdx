@@ -1,0 +1,128 @@
+---
+name: GhanaAPI
+description: The definitive REST API for Ghanaian services - Addresses, Exchange Rates, Locations, Transport & Logistics, and more.
+website: https://ghana-api.dev/
+github: https://github.com/teebhagg/GhanaAPI
+docs: https://docs.ghana-api.dev/
+api_docs: https://api.ghana-api.dev/docs
+techstack:
+  - label: TypeScript
+  - label: Node.js
+  - label: Nest.js
+  - label: Swagger
+  - label: REST API
+---
+
+## 🇬🇭 GhanaAPI - The Definitive REST API for Ghanaian Services
+
+GhanaAPI provides developers with unified, reliable access to essential Ghanaian services through a modern REST API. Instead of integrating with multiple fragmented services, developers can access everything through one comprehensive, well-documented API.
+
+### 🔥 Key Features
+
+- **📍 Address & Location Services** - Ghana Post Digital Address validation, geocoding, and location lookup
+- **💱 Live Exchange Rates** - Real-time GHS exchange rates with historical data and trends
+- **🏛️ Government Data** - Regional information, districts, and official datasets
+- **🚗 Transport & Logistics** - Route planning, transport stops, fuel prices, and travel cost estimation
+- **⚡ High Performance** - Sub-200ms response times with intelligent caching
+- **📊 Developer Friendly** - Interactive Swagger documentation
+
+### 🚀 Project Sections
+
+#### 📚 Documentation
+
+The comprehensive documentation at [docs.ghana-api.dev](https://docs.ghana-api.dev/) provides:
+
+- Getting started guides
+- API reference documentation
+- Code examples in multiple languages
+- Best practices and integration patterns
+
+#### 🔍 API Explorer
+
+Interactive API exploration at [api.ghana-api.dev/docs](https://api.ghana-api.dev/docs) featuring:
+
+- Live API testing interface
+- Request/response examples
+- Authentication testing
+- Real-time data validation
+
+#### 🛠️ Swagger Documentation
+
+Complete OpenAPI specification with:
+
+- Detailed endpoint descriptions
+- Request/response schemas
+- Authentication requirements
+- Error handling documentation
+
+#### 💻 GitHub Repository
+
+Open-source development at [github.com/teebhagg/GhanaAPI](https://github.com/teebhagg/GhanaAPI):
+
+- Full source code access
+- Contribution guidelines
+- Issue tracking
+- Release management
+
+### 🎯 API Endpoints
+
+#### Address & Location Services
+
+- **Validate Digital Address**: `GET /v1/addresses/validate/{digitalCode}`
+- **Reverse Geocoding**: `GET /v1/addresses/lookup?lat={latitude}&lng={longitude}`
+- **Address Search**: `GET /v1/addresses/search?q={query}&limit={limit}`
+
+#### Exchange Rate Services
+
+- **Current Exchange Rates**: `GET /v1/exchange-rates/current?currencies={currencies}`
+- **Historical Exchange Rates**: `GET /v1/exchange-rates/historical?currency={currency}&from={date}&to={date}`
+
+#### Transport & Logistics
+
+- **Calculate Route**: `GET /v1/transport/route-calculation?start_lat={lat}&start_lng={lng}&end_lat={lat}&end_lng={lng}`
+- **Get Transport Stops**: `GET /v1/transport/stops?city={city}&type={type}`
+- **Get Current Fuel Prices**: `GET /v1/transport/fuel-prices`
+
+### 💡 Quick Example
+
+```javascript
+// Get current USD to GHS exchange rate
+const response = await fetch(
+  'https://api.ghana-api.dev/v1/exchange-rates/current?currencies=USD'
+);
+const data = await response.json();
+console.log(`1 USD = ${data.rates.USD.rate} GHS`);
+
+// Validate Ghana Post Digital Address
+const address = await fetch(
+  'https://api.ghana-api.dev/v1/addresses/validate/GA-123-4567'
+);
+const validation = await address.json();
+console.log(`Address is ${validation.isValid ? 'valid' : 'invalid'}`);
+```
+
+### 🏗️ Technical Architecture
+
+- **Backend**: Node.js with Express.js framework
+- **Database**: PostgreSQL for data persistence
+- **Documentation**: Swagger/OpenAPI 3.0 specification
+- **Deployment**: Docker containerization
+- **Performance**: Sub-200ms response times with intelligent caching
+- **Monitoring**: Comprehensive logging and error tracking
+
+### 🌟 Impact & Recognition
+
+- **4+ GitHub Stars** and growing community
+- **MIT Licensed** open-source project
+- **Active Development** with regular updates
+- **Developer Community** focused on Ghanaian tech ecosystem
+
+### 🔮 Future Roadmap
+
+- Enhanced mobile SDK development
+- Additional government data integration
+- Real-time notifications system
+- Advanced analytics dashboard
+- Multi-language support for local languages
+
+Built with ❤️ for the Ghanaian developer community and made in Ghana 🇬🇭.

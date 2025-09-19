@@ -2,7 +2,13 @@
 
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, ExternalLink, GithubIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpRightIcon,
+  Calendar,
+  ExternalLink,
+  GithubIcon
+} from 'lucide-react';
 
 import Link from 'next/link';
 
@@ -85,15 +91,25 @@ const Header = (props: HeaderProps) => {
         transition={{ duration: 0.5, delay: 0.2 }}
       >
         {website && (
-          <Button variant="default" size="lg" className="gap-2" asChild>
+          <Button
+            variant="default"
+            size="lg"
+            className="gap-2 rounded-full"
+            asChild
+          >
             <Link href={website} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
               Visit Website
+              <ArrowUpRightIcon className="h-4 w-4" />
             </Link>
           </Button>
         )}
         {github && (
-          <Button variant="outline" size="lg" className="gap-2" asChild>
+          <Button
+            variant="outline"
+            size="lg"
+            className="gap-2 rounded-full"
+            asChild
+          >
             <Link href={github} target="_blank" rel="noopener noreferrer">
               <GithubIcon className="h-4 w-4" />
               View Source Code

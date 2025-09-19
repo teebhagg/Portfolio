@@ -92,3 +92,14 @@
 .markdown > * {
   all: revert;
 }
+
+@layer components {
+  /* Ensure code blocks are readable in both themes */
+  .prose :where(pre, code) {
+    color: hsl(var(--foreground));
+  }
+  .prose :where(pre) {
+    background-color: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+  }
+}

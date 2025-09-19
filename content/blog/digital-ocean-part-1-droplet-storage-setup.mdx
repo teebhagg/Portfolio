@@ -1,0 +1,525 @@
+---
+title: 'Digital Ocean Mastery Part 1: Setting Up Your Droplet and Storage'
+description: 'Learn how to create and configure a Digital Ocean droplet with attached storage for production-ready applications. Complete guide with security best practices.'
+date: 'September 18, 2025'
+author: 'Joshua Ansah'
+category: 'DevOps'
+tags: ['Digital Ocean', 'Droplet', 'Storage', 'Linux', 'Ubuntu', 'VPS']
+featured: true
+thumbnail: '/images/blog/do-part-1.jpg'
+---
+
+# Digital Ocean Mastery Part 1: Setting Up Your Droplet and Storage
+
+Welcome to the first part of our comprehensive Digital Ocean mastery series! In this guide, we'll walk through creating and configuring a production-ready Digital Ocean droplet with attached storage. This foundation will serve as the backbone for all subsequent parts of our series.
+
+## 🎯 What You'll Learn
+
+By the end of this tutorial, you'll have:
+
+- A properly configured Digital Ocean droplet
+- Attached block storage for data persistence
+- Essential security configurations
+- SSH key authentication
+- Firewall rules and basic hardening
+- Monitoring and backup setup
+
+## 📋 Prerequisites
+
+Before we begin, ensure you have:
+
+- A Digital Ocean account ([Sign up here](https://www.digitalocean.com/))
+- SSH key pair generated on your local machine
+- Basic command line knowledge
+- A domain name (optional, for later parts)
+
+## 🚀 Step 1: Creating Your Droplet
+
+### Choose Your Droplet Configuration
+
+Log into your Digital Ocean dashboard and click **"Create"** → **"Droplet"**.
+
+```bash
+# Recommended configuration for production:
+Distribution: Ubuntu 22.04 (LTS) x64
+Plan: Basic
+CPU Options: Regular Intel - $12/month (2 GB RAM, 1 vCPU, 50 GB SSD)
+Datacenter: Choose closest to your users
+Authentication: SSH Key (we'll set this up)
+```
+
+### Generate SSH Keys (If You Haven't Already)
+
+On your local machine:
+
+```bash
+# Generate a new SSH key pair
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# Start the ssh-agent
+eval "$(ssh-agent -s)"
+
+# Add your SSH private key to the ssh-agent
+ssh-add ~/.ssh/id_ed25519
+
+# Copy the public key to clipboard (macOS)
+pbcopy < ~/.ssh/id_ed25519.pub
+
+# On Linux, use:
+cat ~/.ssh/id_ed25519.pub
+```
+
+### Configure SSH Key in Digital Ocean
+
+1. In the droplet creation form, click **"New SSH Key"**
+2. Paste your public key
+3. Give it a meaningful name like "My-MacBook-Pro"
+4. Click **"Add SSH Key"**
+
+### Droplet Naming and Tags
+
+```bash
+# Choose a descriptive name
+Hostname: production-server-01
+
+# Add useful tags
+Tags: production, nodejs, api, web-server
+```
+
+## 💾 Step 2: Adding Block Storage
+
+### Create a Volume
+
+Before finishing droplet creation:
+
+```bash
+# In the "Add block storage" section:
+Volume Name: app-data-volume
+Size: 100 GB (adjust based on your needs)
+```
+
+**Why Block Storage?**
+
+- Data persists even if droplet is destroyed
+- Can be resized without downtime
+- Separate billing from compute resources
+- Easy backup and snapshot management
+
+### Complete Droplet Creation
+
+Click **"Create Droplet"** and wait 2-3 minutes for provisioning.
+
+## 🔧 Step 3: Initial Server Configuration
+
+### Connect to Your Droplet
+
+```bash
+# Get your droplet's IP from the Digital Ocean dashboard
+ssh root@YOUR_DROPLET_IP
+
+# You should see something like:
+# Welcome to Ubuntu 22.04.3 LTS (GNU/Linux 5.15.0-78-generic x86_64)
+```
+
+### Update System Packages
+
+```bash
+# Update package index
+apt update
+
+# Upgrade installed packages
+apt upgrade -y
+
+# Install essential packages
+apt install -y curl wget git htop unzip software-properties-common ufw fail2ban
+```
+
+### Create a Non-Root User
+
+```bash
+# Create a new user (replace 'deploy' with your preferred username)
+adduser deploy
+
+# Add user to sudo group
+usermod -aG sudo deploy
+
+# Copy SSH keys to the new user
+rsync --archive --chown=deploy:deploy ~/.ssh /home/deploy
+```
+
+## 🔒 Step 4: Security Configuration
+
+### Configure UFW Firewall
+
+```bash
+# Set default policies
+ufw default deny incoming
+ufw default allow outgoing
+
+# Allow SSH (port 22)
+ufw allow ssh
+
+# Allow HTTP and HTTPS (for web applications)
+ufw allow 'Nginx Full'
+
+# Or if using specific ports:
+ufw allow 80/tcp
+ufw allow 443/tcp
+
+# Enable firewall
+ufw enable
+
+# Check status
+ufw status verbose
+```
+
+### Configure Fail2Ban
+
+```bash
+# Create a local configuration file
+cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+
+# Edit the configuration
+nano /etc/fail2ban/jail.local
+```
+
+Add this configuration:
+
+```ini
+[DEFAULT]
+bantime = 3600
+findtime = 600
+maxretry = 3
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+```
+
+```bash
+# Restart and enable fail2ban
+systemctl restart fail2ban
+systemctl enable fail2ban
+
+# Check status
+fail2ban-client status
+```
+
+### Disable Root Login (Optional but Recommended)
+
+```bash
+# Edit SSH configuration
+nano /etc/ssh/sshd_config
+
+# Find and modify these lines:
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+
+# Restart SSH service
+systemctl restart ssh
+```
+
+**⚠️ Warning**: Test SSH connection with your new user before logging out as root!
+
+```bash
+# From another terminal, test connection:
+ssh deploy@YOUR_DROPLET_IP
+```
+
+## 💿 Step 5: Configuring Block Storage
+
+### Mount the Volume
+
+```bash
+# Check if volume is attached
+lsblk
+
+# You should see something like:
+# sda      8:0    0   50G  0 disk
+# └─sda1   8:1    0   49G  0 part /
+# sdb      8:16   0  100G  0 disk    # This is your volume
+
+# Format the volume (only do this once!)
+mkfs.ext4 /dev/sdb
+
+# Create mount point
+mkdir -p /mnt/app-data
+
+# Mount the volume
+mount /dev/sdb /mnt/app-data
+
+# Set permissions
+chown deploy:deploy /mnt/app-data
+```
+
+### Configure Automatic Mounting
+
+```bash
+# Get the UUID of your volume
+blkid /dev/sdb
+
+# Add to fstab for automatic mounting
+echo 'UUID=your-uuid-here /mnt/app-data ext4 defaults,nofail,discard 0 2' >> /etc/fstab
+
+# Test the fstab entry
+umount /mnt/app-data
+mount -a
+
+# Verify it's mounted
+df -h
+```
+
+### Create Application Directories
+
+```bash
+# Switch to deploy user
+su - deploy
+
+# Create application structure
+mkdir -p /mnt/app-data/{apps,databases,logs,backups}
+mkdir -p /mnt/app-data/apps/{production,staging,development}
+
+# Create symlinks for easier access
+ln -s /mnt/app-data ~/app-data
+```
+
+## 📊 Step 6: Monitoring and Logging Setup
+
+### Install and Configure Log Rotation
+
+```bash
+# Create logrotate configuration for your apps
+sudo nano /etc/logrotate.d/app-logs
+```
+
+```bash
+/mnt/app-data/logs/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
+```
+
+### Basic System Monitoring
+
+```bash
+# Install htop for system monitoring
+sudo apt install htop
+
+# Create a simple monitoring script
+nano ~/monitor.sh
+```
+
+```bash
+#!/bin/bash
+echo "=== System Status ==="
+echo "Date: $(date)"
+echo "Uptime: $(uptime)"
+echo "Disk Usage:"
+df -h
+echo "Memory Usage:"
+free -h
+echo "Top Processes:"
+ps aux --sort=-%cpu | head -10
+```
+
+```bash
+# Make it executable
+chmod +x ~/monitor.sh
+
+# Run it
+./monitor.sh
+```
+
+## 🔄 Step 7: Backup Configuration
+
+### Create Backup Scripts
+
+```bash
+# Create backup directory
+mkdir -p /mnt/app-data/backups
+
+# Create a simple backup script
+nano ~/backup.sh
+```
+
+```bash
+#!/bin/bash
+BACKUP_DIR="/mnt/app-data/backups"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+# Create backup directory for today
+mkdir -p "$BACKUP_DIR/$DATE"
+
+# Backup important configuration files
+tar -czf "$BACKUP_DIR/$DATE/system-config.tar.gz" \
+    /etc/nginx \
+    /etc/ssl \
+    /etc/fail2ban \
+    /etc/ufw \
+    2>/dev/null
+
+echo "Backup completed: $BACKUP_DIR/$DATE"
+
+# Keep only last 7 days of backups
+find "$BACKUP_DIR" -type d -mtime +7 -exec rm -rf {} +
+```
+
+```bash
+# Make it executable
+chmod +x ~/backup.sh
+
+# Add to crontab for daily backups
+crontab -e
+
+# Add this line for daily backups at 2 AM:
+0 2 * * * /home/deploy/backup.sh
+```
+
+## 🏷️ Step 8: Digital Ocean Features Setup
+
+### Enable Monitoring
+
+1. Go to your droplet in the Digital Ocean dashboard
+2. Click **"Monitoring"** tab
+3. Enable **"Monitoring Agent"**
+
+### Configure Automatic Backups
+
+```bash
+# In Digital Ocean dashboard:
+1. Go to your droplet
+2. Click "Backups" tab
+3. Enable weekly backups
+```
+
+### Set up Volume Snapshots
+
+```bash
+# Create your first volume snapshot
+1. Go to "Volumes" in your Digital Ocean dashboard
+2. Click your volume name
+3. Click "Take Snapshot"
+4. Name it: "initial-setup-snapshot"
+```
+
+## ✅ Step 9: Verification and Testing
+
+### Test Your Setup
+
+```bash
+# Check disk space
+df -h
+
+# Check memory usage
+free -h
+
+# Check running services
+systemctl status ufw fail2ban
+
+# Test firewall
+ufw status
+
+# Check mounted volumes
+mount | grep app-data
+
+# Verify backup script
+./backup.sh
+ls -la /mnt/app-data/backups/
+```
+
+### Document Your Configuration
+
+Create a configuration file for future reference:
+
+```bash
+nano ~/server-info.txt
+```
+
+```text
+=== Server Configuration ===
+Droplet IP: YOUR_DROPLET_IP
+SSH User: deploy
+SSH Key: ~/.ssh/id_ed25519
+
+=== Storage ===
+Block Storage: /dev/sdb mounted at /mnt/app-data
+Size: 100GB
+UUID: your-volume-uuid
+
+=== Security ===
+Firewall: UFW enabled
+Fail2Ban: Configured
+Root Login: Disabled
+SSH Keys: Only authentication method
+
+=== Backup ===
+Daily backups: 2 AM via cron
+Backup location: /mnt/app-data/backups
+Retention: 7 days
+```
+
+## 🎉 What's Next?
+
+Congratulations! You now have a production-ready Digital Ocean droplet with:
+
+✅ **Secure Configuration**: SSH keys, firewall, fail2ban  
+✅ **Persistent Storage**: 100GB block storage mounted and configured  
+✅ **Monitoring**: Basic monitoring and logging setup  
+✅ **Backup Strategy**: Automated daily backups  
+✅ **User Management**: Non-root user with sudo access
+
+### Coming Up in Part 2
+
+In the next part of our series, we'll:
+
+- Install and configure PostgreSQL
+- Set up database security and user management
+- Configure remote access to your database
+- Implement database backup strategies
+- Optimize PostgreSQL for production use
+
+## 🔗 Quick Reference Commands
+
+```bash
+# Connect to your droplet
+ssh deploy@YOUR_DROPLET_IP
+
+# Check system status
+htop
+df -h
+free -h
+
+# View logs
+sudo tail -f /var/log/auth.log
+sudo fail2ban-client status
+
+# Mount volume (if needed)
+sudo mount /dev/sdb /mnt/app-data
+
+# Run backup
+./backup.sh
+```
+
+## 💡 Pro Tips
+
+1. **Always test SSH access** with your new user before disabling root login
+2. **Take snapshots** before major changes
+3. **Monitor disk usage** regularly, especially on the root partition
+4. **Keep your SSH keys secure** and backed up
+5. **Document everything** for your future self and team members
+
+---
+
+_Ready for Part 2? We'll dive into PostgreSQL setup and configuration!_
+
+**Next**: [Digital Ocean Mastery Part 2: PostgreSQL Setup and External Access](/blog/digital-ocean-part-2-postgresql-setup)

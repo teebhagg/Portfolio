@@ -2,6 +2,7 @@ import type { Metadata, ResolvingMetadata } from 'next';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
+import { MemoizedReactMarkdown } from '@/components/markdown';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { getAllPages, getPage, type ProjectMetadata } from '@/lib/mdx';
@@ -107,7 +108,7 @@ const ProjectPage = (props: ProjectPageProps) => {
         <div className="order-2 lg:order-1 lg:col-span-2">
           <h2 className="mb-6 text-3xl font-bold">Project Overview</h2>
           <div className="prose prose-lg max-w-none dark:prose-invert">
-            {content}
+            <MemoizedReactMarkdown>{content}</MemoizedReactMarkdown>
           </div>
         </div>
 

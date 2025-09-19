@@ -2,6 +2,18 @@ import { Project } from '@/types/project';
 
 const projects: Project[] = [
   {
+    name: 'GhanaAPI',
+    slug: 'ghana_api',
+    description:
+      'The definitive REST API for Ghanaian services - Addresses, Exchange Rates, Locations, Transport & Logistics, and more.',
+    thumbnail:
+      'https://github.com/teebhagg/GhanaAPI/blob/main/ghana-api-banner.png?raw=true',
+    category: 'API Development',
+    tags: ['TypeScript', 'Node.js', 'Nest.js', 'REST API'],
+    githubUrl: 'https://github.com/teebhagg/GhanaAPI',
+    liveUrl: 'https://ghana-api.dev'
+  },
+  {
     name: 'Personal Portfolio Website',
     slug: 'portfolio',
     description:
@@ -20,7 +32,7 @@ const projects: Project[] = [
     thumbnail: '/images/projects/seymo_school/cover.jpg',
     category: 'Mobile App',
     tags: ['Flutter', 'Dart', 'Firebase'],
-    liveUrl: 'https://play.google.com/store/apps/details?id=com.seymo_school'
+    liveUrl: 'https://play.google.com/store/apps/details?id=com.seymo_schools'
   },
   {
     name: 'Moyosore Blog Web App',

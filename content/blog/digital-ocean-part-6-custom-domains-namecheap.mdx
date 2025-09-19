@@ -1,0 +1,1052 @@
+---
+title: 'Digital Ocean Mastery Part 6: Custom Domains with Namecheap DNS'
+description: 'Configure custom domains and subdomains for your Digital Ocean applications using Namecheap as DNS provider. SSL certificates, domain management, and best practices.'
+date: 'September 13, 2025'
+author: 'Joshua Ansah'
+category: 'DevOps'
+tags:
+  ['Custom Domains', 'Namecheap', 'DNS', 'SSL', 'Subdomains', 'Digital Ocean']
+featured: true
+thumbnail: '/images/blog/do-part-6.jpg'
+---
+
+# Digital Ocean Mastery Part 6: Custom Domains with Namecheap DNS
+
+Welcome to the final part of our Digital Ocean mastery series! We'll now configure custom domains and subdomains using Namecheap as our DNS provider, implement SSL certificates, and set up professional domain management for all our environments.
+
+## 🎯 What You'll Learn
+
+In this comprehensive guide, we'll cover:
+
+- Domain and subdomain configuration with Namecheap
+- DNS records setup and management
+- SSL certificate implementation with Let's Encrypt
+- Nginx configuration for multiple domains
+- Domain-based environment routing
+- CDN setup and performance optimization
+- Domain monitoring and renewal automation
+- Professional email setup (bonus)
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+- Completed [Parts 1-5](/blog/digital-ocean-part-1-droplet-storage-setup) of this series
+- A domain name purchased from Namecheap (or any provider)
+- Access to your domain's DNS management
+- Understanding of DNS concepts (A, CNAME, MX records)
+
+## 🏗️ Step 1: Domain Strategy Planning
+
+### Domain Structure Planning
+
+Let's plan our domain structure for all environments:
+
+```bash
+# Example domain structure:
+# yourdomain.com -> Production
+# staging.yourdomain.com -> Staging
+# dev.yourdomain.com -> Development
+# api.yourdomain.com -> API Gateway
+# admin.yourdomain.com -> Admin Panel
+
+# Create domain planning document
+cat > ~/domain-plan.md <<EOF
+# Domain Configuration Plan
+
+## Primary Domain: yourdomain.com
+- **Environment**: Production
+- **Port**: 80/443
+- **Container**: production-app
+- **SSL**: Let's Encrypt
+
+## Subdomains:
+
+### staging.yourdomain.com
+- **Environment**: Staging
+- **Port**: 8101 (internal), 80/443 (external)
+- **Container**: staging-app
+- **SSL**: Let's Encrypt
+
+### dev.yourdomain.com
+- **Environment**: Development
+- **Port**: 8201 (internal), 80/443 (external)
+- **Container**: development-app
+- **SSL**: Let's Encrypt
+
+### api.yourdomain.com
+- **Purpose**: API Gateway
+- **Routes**: Load balancer for all API endpoints
+- **SSL**: Let's Encrypt
+
+### admin.yourdomain.com
+- **Purpose**: Administrative interface
+- **Security**: IP whitelist, basic auth
+- **SSL**: Let's Encrypt
+
+### www.yourdomain.com
+- **Purpose**: Redirect to main domain
+- **SSL**: Let's Encrypt
+EOF
+```
+
+## 🌐 Step 2: Namecheap DNS Configuration
+
+### Setting Up DNS Records
+
+1. **Log into Namecheap**:
+
+   - Go to [Namecheap.com](https://namecheap.com)
+   - Navigate to Domain List > Manage > Advanced DNS
+
+2. **Configure A Records**:
+
+```bash
+# DNS Records to add in Namecheap:
+
+# A Records (point to your droplet IP)
+Type: A Record, Host: @, Value: YOUR_DROPLET_IP, TTL: 300
+Type: A Record, Host: www, Value: YOUR_DROPLET_IP, TTL: 300
+Type: A Record, Host: staging, Value: YOUR_DROPLET_IP, TTL: 300
+Type: A Record, Host: dev, Value: YOUR_DROPLET_IP, TTL: 300
+Type: A Record, Host: api, Value: YOUR_DROPLET_IP, TTL: 300
+Type: A Record, Host: admin, Value: YOUR_DROPLET_IP, TTL: 300
+
+# Optional: AAAA Records for IPv6 (if you have IPv6)
+Type: AAAA Record, Host: @, Value: YOUR_DROPLET_IPv6, TTL: 300
+```
+
+### Create DNS Management Script
+
+```bash
+# Create DNS monitoring script
+cat > ~/dns-check.sh <<EOF
+#!/bin/bash
+
+DOMAIN="yourdomain.com"
+DROPLET_IP="YOUR_DROPLET_IP"
+
+echo "=== DNS Configuration Check ==="
+echo "Date: \$(date)"
+echo "Domain: \$DOMAIN"
+echo "Expected IP: \$DROPLET_IP"
+echo
+
+# Check main domain
+echo "Checking main domain..."
+RESOLVED_IP=\$(dig +short \$DOMAIN)
+if [ "\$RESOLVED_IP" = "\$DROPLET_IP" ]; then
+    echo "✅ \$DOMAIN resolves correctly to \$DROPLET_IP"
+else
+    echo "❌ \$DOMAIN resolves to \$RESOLVED_IP (expected \$DROPLET_IP)"
+fi
+
+# Check subdomains
+for subdomain in www staging dev api admin; do
+    echo "Checking \$subdomain.\$DOMAIN..."
+    RESOLVED_IP=\$(dig +short \$subdomain.\$DOMAIN)
+    if [ "\$RESOLVED_IP" = "\$DROPLET_IP" ]; then
+        echo "✅ \$subdomain.\$DOMAIN resolves correctly"
+    else
+        echo "❌ \$subdomain.\$DOMAIN resolves to \$RESOLVED_IP"
+    fi
+done
+
+echo
+echo "=== DNS Propagation Status ==="
+echo "Note: DNS changes can take up to 48 hours to fully propagate"
+EOF
+
+chmod +x ~/dns-check.sh
+```
+
+## 🔒 Step 3: SSL Certificate Setup with Let's Encrypt
+
+### Install Certbot
+
+```bash
+# Install Certbot for Let's Encrypt
+sudo apt update
+sudo apt install -y certbot python3-certbot-nginx
+
+# Create certificate directory
+sudo mkdir -p /mnt/app-data/ssl-certs
+sudo chown deploy:deploy /mnt/app-data/ssl-certs
+```
+
+### Generate SSL Certificates
+
+```bash
+# Create SSL certificate generation script
+cat > ~/generate-ssl.sh <<EOF
+#!/bin/bash
+
+set -e
+
+DOMAIN="yourdomain.com"
+EMAIL="your-email@\$DOMAIN"
+
+echo "Generating SSL certificates for \$DOMAIN and subdomains..."
+
+# Stop nginx temporarily for standalone mode
+sudo systemctl stop nginx 2>/dev/null || true
+docker stop production-nginx staging-nginx 2>/dev/null || true
+
+# Generate certificates for main domain and all subdomains
+sudo certbot certonly --standalone \
+    --email \$EMAIL \
+    --agree-tos \
+    --no-eff-email \
+    -d \$DOMAIN \
+    -d www.\$DOMAIN \
+    -d staging.\$DOMAIN \
+    -d dev.\$DOMAIN \
+    -d api.\$DOMAIN \
+    -d admin.\$DOMAIN
+
+# Copy certificates to our managed location
+sudo cp -r /etc/letsencrypt/live/\$DOMAIN /mnt/app-data/ssl-certs/
+sudo chown -R deploy:deploy /mnt/app-data/ssl-certs/
+
+echo "SSL certificates generated successfully!"
+echo "Certificates location: /mnt/app-data/ssl-certs/\$DOMAIN/"
+
+# Create renewal script
+cat > ~/renew-ssl.sh <<EOL
+#!/bin/bash
+echo "Renewing SSL certificates..."
+
+# Stop services
+docker-compose -f ~/environments/production/docker-compose.yml stop nginx
+docker-compose -f ~/environments/staging/docker-compose.yml stop nginx
+
+# Renew certificates
+sudo certbot renew --standalone
+
+# Copy renewed certificates
+sudo cp -r /etc/letsencrypt/live/\$DOMAIN /mnt/app-data/ssl-certs/
+sudo chown -R deploy:deploy /mnt/app-data/ssl-certs/
+
+# Restart services
+docker-compose -f ~/environments/production/docker-compose.yml start nginx
+docker-compose -f ~/environments/staging/docker-compose.yml start nginx
+
+echo "SSL certificates renewed successfully!"
+EOL
+
+chmod +x ~/renew-ssl.sh
+
+# Add to crontab for automatic renewal (runs twice daily)
+(crontab -l 2>/dev/null; echo "0 2,14 * * * /home/deploy/renew-ssl.sh >> /mnt/app-data/logs/ssl-renewal.log 2>&1") | crontab -
+
+echo "SSL renewal scheduled in crontab"
+EOF
+
+chmod +x ~/generate-ssl.sh
+
+# Wait for DNS propagation before running
+echo "Please wait for DNS propagation (15-30 minutes) before running:"
+echo "./generate-ssl.sh"
+```
+
+## 🌐 Step 4: Advanced Nginx Configuration
+
+### Create Master Nginx Configuration
+
+```bash
+# Create comprehensive nginx configuration
+cat > ~/nginx-master.conf <<EOF
+# Main Nginx Configuration for Multi-Domain Setup
+
+# Global settings
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log warn;
+pid /var/run/nginx.pid;
+
+events {
+    worker_connections 1024;
+    use epoll;
+    multi_accept on;
+}
+
+http {
+    # Basic settings
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Logging format
+    log_format main '\$remote_addr - \$remote_user [\$time_local] "\$request" '
+                    '\$status \$body_bytes_sent "\$http_referer" '
+                    '"\$http_user_agent" "\$http_x_forwarded_for" '
+                    'rt=\$request_time uct="\$upstream_connect_time" '
+                    'uht="\$upstream_header_time" urt="\$upstream_response_time"';
+
+    access_log /var/log/nginx/access.log main;
+
+    # Performance settings
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 50M;
+    client_body_timeout 60s;
+    client_header_timeout 60s;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_comp_level 6;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/json
+        application/javascript
+        application/xml+rss
+        application/atom+xml
+        image/svg+xml;
+
+    # Security headers
+    add_header X-Frame-Options DENY always;
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self'; font-src 'self'; object-src 'none'; media-src 'self'; frame-src 'none';" always;
+
+    # Rate limiting
+    limit_req_zone \$binary_remote_addr zone=general:10m rate=10r/s;
+    limit_req_zone \$binary_remote_addr zone=api:10m rate=30r/s;
+    limit_req_zone \$binary_remote_addr zone=admin:10m rate=2r/s;
+
+    # Upstream definitions
+    upstream production_app {
+        server 127.0.0.1:8000;
+        keepalive 32;
+    }
+
+    upstream staging_app {
+        server 127.0.0.1:8100;
+        keepalive 16;
+    }
+
+    upstream development_app {
+        server 127.0.0.1:8200;
+        keepalive 8;
+    }
+
+    # HTTP to HTTPS redirect
+    server {
+        listen 80;
+        server_name yourdomain.com www.yourdomain.com staging.yourdomain.com dev.yourdomain.com api.yourdomain.com admin.yourdomain.com;
+        return 301 https://\$server_name\$request_uri;
+    }
+
+    # Production - yourdomain.com
+    server {
+        listen 443 ssl http2;
+        server_name yourdomain.com;
+
+        # SSL configuration
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:SSL:50m;
+        ssl_session_tickets off;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+        ssl_prefer_server_ciphers off;
+
+        # HSTS
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+        # Rate limiting
+        limit_req zone=general burst=20 nodelay;
+
+        location / {
+            proxy_pass http://production_app;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+            proxy_set_header X-Forwarded-Host \$host;
+            proxy_set_header X-Forwarded-Port \$server_port;
+
+            # Timeouts
+            proxy_connect_timeout 60s;
+            proxy_send_timeout 60s;
+            proxy_read_timeout 60s;
+
+            # Buffering
+            proxy_buffering on;
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+        }
+
+        # Health check endpoint
+        location /health {
+            proxy_pass http://production_app;
+            access_log off;
+        }
+
+        # Static files caching
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js|woff|woff2|ttf|svg)\$ {
+            proxy_pass http://production_app;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+    }
+
+    # WWW redirect to non-WWW
+    server {
+        listen 443 ssl http2;
+        server_name www.yourdomain.com;
+
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+
+        return 301 https://yourdomain.com\$request_uri;
+    }
+
+    # Staging - staging.yourdomain.com
+    server {
+        listen 443 ssl http2;
+        server_name staging.yourdomain.com;
+
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+
+        # Basic auth for staging (optional)
+        # auth_basic "Staging Environment";
+        # auth_basic_user_file /etc/nginx/.htpasswd;
+
+        limit_req zone=general burst=10 nodelay;
+
+        location / {
+            proxy_pass http://staging_app;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+    }
+
+    # Development - dev.yourdomain.com
+    server {
+        listen 443 ssl http2;
+        server_name dev.yourdomain.com;
+
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+
+        # IP whitelist for development (adjust IPs)
+        allow 127.0.0.1;
+        allow YOUR_OFFICE_IP;
+        allow YOUR_HOME_IP;
+        deny all;
+
+        location / {
+            proxy_pass http://development_app;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+    }
+
+    # API Gateway - api.yourdomain.com
+    server {
+        listen 443 ssl http2;
+        server_name api.yourdomain.com;
+
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+
+        limit_req zone=api burst=50 nodelay;
+
+        # CORS headers for API
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization" always;
+
+        # Handle preflight requests
+        if (\$request_method = 'OPTIONS') {
+            return 204;
+        }
+
+        # API versioning
+        location /v1/ {
+            proxy_pass http://production_app/api/v1/;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+
+        # Default to latest API version
+        location / {
+            proxy_pass http://production_app/api/;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+    }
+
+    # Admin Panel - admin.yourdomain.com
+    server {
+        listen 443 ssl http2;
+        server_name admin.yourdomain.com;
+
+        ssl_certificate /etc/ssl/certs/yourdomain.com/fullchain.pem;
+        ssl_certificate_key /etc/ssl/certs/yourdomain.com/privkey.pem;
+
+        # IP whitelist for admin panel
+        allow YOUR_OFFICE_IP;
+        allow YOUR_HOME_IP;
+        deny all;
+
+        # Basic authentication
+        auth_basic "Admin Panel";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        limit_req zone=admin burst=5 nodelay;
+
+        location / {
+            proxy_pass http://production_app/admin/;
+            proxy_set_header Host \$host;
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$scheme;
+        }
+    }
+}
+EOF
+```
+
+### Create Basic Auth for Admin Panel
+
+```bash
+# Install apache2-utils for htpasswd
+sudo apt install -y apache2-utils
+
+# Create basic auth file
+sudo htpasswd -c /etc/nginx/.htpasswd admin
+
+# Set proper permissions
+sudo chmod 644 /etc/nginx/.htpasswd
+```
+
+### Deploy Nginx Configuration
+
+```bash
+# Create nginx deployment script
+cat > ~/deploy-nginx.sh <<EOF
+#!/bin/bash
+
+set -e
+
+echo "Deploying nginx configuration..."
+
+# Backup current configuration
+if [ -f /etc/nginx/nginx.conf ]; then
+    sudo cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup.\$(date +%Y%m%d_%H%M%S)
+fi
+
+# Deploy new configuration
+sudo cp ~/nginx-master.conf /etc/nginx/nginx.conf
+
+# Create SSL certificate directory in nginx
+sudo mkdir -p /etc/ssl/certs
+sudo ln -sf /mnt/app-data/ssl-certs/yourdomain.com /etc/ssl/certs/yourdomain.com
+
+# Test configuration
+if sudo nginx -t; then
+    echo "✅ Nginx configuration is valid"
+
+    # Reload nginx
+    if sudo systemctl is-active nginx > /dev/null; then
+        sudo systemctl reload nginx
+        echo "✅ Nginx reloaded successfully"
+    else
+        sudo systemctl start nginx
+        echo "✅ Nginx started successfully"
+    fi
+else
+    echo "❌ Nginx configuration is invalid"
+
+    # Restore backup if available
+    if [ -f /etc/nginx/nginx.conf.backup.* ]; then
+        LATEST_BACKUP=\$(ls -t /etc/nginx/nginx.conf.backup.* | head -1)
+        sudo cp "\$LATEST_BACKUP" /etc/nginx/nginx.conf
+        echo "Restored backup configuration"
+    fi
+    exit 1
+fi
+
+echo "Nginx deployment completed!"
+EOF
+
+chmod +x ~/deploy-nginx.sh
+```
+
+## 📊 Step 5: Domain Monitoring and Management
+
+### Create Domain Health Monitoring
+
+```bash
+# Create comprehensive domain monitoring script
+cat > ~/monitor-domains.sh <<EOF
+#!/bin/bash
+
+DOMAIN="yourdomain.com"
+LOG_FILE="/mnt/app-data/logs/domain-monitor.log"
+
+echo "=== Domain Health Monitor - \$(date) ===" >> \$LOG_FILE
+
+# Domains to monitor
+DOMAINS=(
+    "yourdomain.com"
+    "www.yourdomain.com"
+    "staging.yourdomain.com"
+    "dev.yourdomain.com"
+    "api.yourdomain.com"
+    "admin.yourdomain.com"
+)
+
+# Check each domain
+for domain in "\${DOMAINS[@]}"; do
+    echo "--- Checking \$domain ---" >> \$LOG_FILE
+
+    # SSL certificate check
+    SSL_EXPIRY=\$(echo | openssl s_client -servername \$domain -connect \$domain:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep notAfter | cut -d= -f2)
+
+    if [ -n "\$SSL_EXPIRY" ]; then
+        SSL_EXPIRY_EPOCH=\$(date -d "\$SSL_EXPIRY" +%s)
+        CURRENT_EPOCH=\$(date +%s)
+        DAYS_UNTIL_EXPIRY=\$(( (SSL_EXPIRY_EPOCH - CURRENT_EPOCH) / 86400 ))
+
+        echo "🔒 SSL expires in \$DAYS_UNTIL_EXPIRY days (\$SSL_EXPIRY)" >> \$LOG_FILE
+
+        # Alert if expiring soon
+        if [ \$DAYS_UNTIL_EXPIRY -lt 30 ]; then
+            echo "⚠️  SSL WARNING: Certificate expires in \$DAYS_UNTIL_EXPIRY days!" >> \$LOG_FILE
+        fi
+    else
+        echo "❌ SSL: Unable to retrieve certificate info" >> \$LOG_FILE
+    fi
+
+    # HTTP response check
+    HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "https://\$domain/health" || echo "000")
+
+    if [ "\$HTTP_STATUS" = "200" ]; then
+        echo "✅ HTTP: \$HTTP_STATUS (OK)" >> \$LOG_FILE
+    else
+        echo "❌ HTTP: \$HTTP_STATUS (Error)" >> \$LOG_FILE
+    fi
+
+    # Response time check
+    RESPONSE_TIME=\$(curl -s -o /dev/null -w "%{time_total}" --max-time 10 "https://\$domain/health" || echo "timeout")
+    echo "⏱️  Response time: \${RESPONSE_TIME}s" >> \$LOG_FILE
+
+    # DNS resolution check
+    DNS_IP=\$(dig +short \$domain | head -1)
+    echo "🌐 DNS resolves to: \$DNS_IP" >> \$LOG_FILE
+
+    echo "" >> \$LOG_FILE
+done
+
+echo "================================" >> \$LOG_FILE
+echo "" >> \$LOG_FILE
+EOF
+
+chmod +x ~/monitor-domains.sh
+
+# Add to crontab for regular monitoring
+crontab -e
+# Add: */30 * * * * /home/deploy/monitor-domains.sh
+```
+
+### SSL Certificate Monitoring
+
+```bash
+# Create SSL monitoring and alert script
+cat > ~/ssl-monitor.sh <<EOF
+#!/bin/bash
+
+DOMAIN="yourdomain.com"
+ALERT_DAYS=14
+EMAIL="your-email@\$DOMAIN"
+
+# Check SSL certificate expiry
+SSL_EXPIRY=\$(echo | openssl s_client -servername \$DOMAIN -connect \$DOMAIN:443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep notAfter | cut -d= -f2)
+
+if [ -n "\$SSL_EXPIRY" ]; then
+    SSL_EXPIRY_EPOCH=\$(date -d "\$SSL_EXPIRY" +%s)
+    CURRENT_EPOCH=\$(date +%s)
+    DAYS_UNTIL_EXPIRY=\$(( (SSL_EXPIRY_EPOCH - CURRENT_EPOCH) / 86400 ))
+
+    echo "SSL certificate for \$DOMAIN expires in \$DAYS_UNTIL_EXPIRY days"
+
+    if [ \$DAYS_UNTIL_EXPIRY -lt \$ALERT_DAYS ]; then
+        echo "WARNING: SSL certificate expires in \$DAYS_UNTIL_EXPIRY days!"
+        echo "Certificate expires on: \$SSL_EXPIRY"
+
+        # Log alert
+        echo "\$(date): SSL WARNING - Certificate expires in \$DAYS_UNTIL_EXPIRY days" >> /mnt/app-data/logs/ssl-alerts.log
+
+        # Here you could send email alerts or Slack notifications
+        # Example: echo "SSL Alert for \$DOMAIN" | mail -s "SSL Expiry Warning" \$EMAIL
+    fi
+else
+    echo "ERROR: Unable to retrieve SSL certificate information for \$DOMAIN"
+    echo "\$(date): SSL ERROR - Unable to retrieve certificate for \$DOMAIN" >> /mnt/app-data/logs/ssl-alerts.log
+fi
+EOF
+
+chmod +x ~/ssl-monitor.sh
+
+# Add to crontab for daily SSL monitoring
+crontab -e
+# Add: 0 9 * * * /home/deploy/ssl-monitor.sh
+```
+
+## 🚀 Step 6: Performance Optimization with CDN
+
+### Cloudflare Integration (Optional)
+
+````bash
+# Create Cloudflare optimization guide
+cat > ~/cloudflare-setup.md <<EOF
+# Cloudflare CDN Setup Guide
+
+## Steps to integrate Cloudflare:
+
+1. **Sign up for Cloudflare**
+   - Go to cloudflare.com
+   - Add your domain
+   - Follow DNS migration instructions
+
+2. **DNS Configuration**
+   - Import existing DNS records
+   - Ensure all A records point to your droplet
+   - Enable Cloudflare proxy (orange cloud) for web traffic
+
+3. **SSL/TLS Settings**
+   - Set SSL/TLS encryption mode to "Full (strict)"
+   - Enable "Always Use HTTPS"
+   - Enable "Automatic HTTPS Rewrites"
+
+4. **Performance Settings**
+   - Enable "Auto Minify" for CSS, JavaScript, HTML
+   - Set "Browser Cache TTL" to "Respect Existing Headers"
+   - Enable "Brotli" compression
+
+5. **Security Settings**
+   - Set Security Level to "Medium"
+   - Enable "Browser Integrity Check"
+   - Configure firewall rules if needed
+
+6. **Page Rules** (if using Cloudflare)
+   - Cache Everything for static assets
+   - Bypass cache for API endpoints
+   - Force HTTPS for all pages
+
+## Nginx Headers for Cloudflare
+
+Add these headers to nginx for optimal Cloudflare integration:
+
+```nginx
+# Cloudflare real IP
+set_real_ip_from 103.21.244.0/22;
+set_real_ip_from 103.22.200.0/22;
+set_real_ip_from 103.31.4.0/22;
+set_real_ip_from 104.16.0.0/13;
+set_real_ip_from 104.24.0.0/14;
+set_real_ip_from 108.162.192.0/18;
+set_real_ip_from 131.0.72.0/22;
+set_real_ip_from 141.101.64.0/18;
+set_real_ip_from 162.158.0.0/15;
+set_real_ip_from 172.64.0.0/13;
+set_real_ip_from 173.245.48.0/20;
+set_real_ip_from 188.114.96.0/20;
+set_real_ip_from 190.93.240.0/20;
+set_real_ip_from 197.234.240.0/22;
+set_real_ip_from 198.41.128.0/17;
+real_ip_header CF-Connecting-IP;
+````
+
+EOF
+
+````
+
+### Performance Testing Script
+
+```bash
+# Create performance testing script
+cat > ~/performance-test.sh <<EOF
+#!/bin/bash
+
+DOMAIN="yourdomain.com"
+LOG_FILE="/mnt/app-data/logs/performance-test.log"
+
+echo "=== Performance Test - \$(date) ===" >> \$LOG_FILE
+
+# Test main domain
+echo "Testing https://\$DOMAIN" >> \$LOG_FILE
+
+# Test load time
+LOAD_TIME=\$(curl -s -o /dev/null -w "%{time_total}" "https://\$DOMAIN")
+echo "Load time: \${LOAD_TIME}s" >> \$LOG_FILE
+
+# Test Time to First Byte
+TTFB=\$(curl -s -o /dev/null -w "%{time_starttransfer}" "https://\$DOMAIN")
+echo "TTFB: \${TTFB}s" >> \$LOG_FILE
+
+# Test DNS lookup time
+DNS_TIME=\$(curl -s -o /dev/null -w "%{time_namelookup}" "https://\$DOMAIN")
+echo "DNS lookup: \${DNS_TIME}s" >> \$LOG_FILE
+
+# Test SSL handshake time
+SSL_TIME=\$(curl -s -o /dev/null -w "%{time_appconnect}" "https://\$DOMAIN")
+echo "SSL handshake: \${SSL_TIME}s" >> \$LOG_FILE
+
+# Test different endpoints
+ENDPOINTS=("/health" "/api/status" "/")
+
+for endpoint in "\${ENDPOINTS[@]}"; do
+    echo "Testing endpoint: \$endpoint" >> \$LOG_FILE
+
+    RESPONSE_TIME=\$(curl -s -o /dev/null -w "%{time_total}" "https://\$DOMAIN\$endpoint")
+    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" "https://\$DOMAIN\$endpoint")
+
+    echo "  Response time: \${RESPONSE_TIME}s, HTTP code: \$HTTP_CODE" >> \$LOG_FILE
+done
+
+echo "================================" >> \$LOG_FILE
+echo "" >> \$LOG_FILE
+EOF
+
+chmod +x ~/performance-test.sh
+
+# Add to crontab for regular performance monitoring
+crontab -e
+# Add: 0 */6 * * * /home/deploy/performance-test.sh
+````
+
+## 📧 Step 7: Professional Email Setup (Bonus)
+
+### Email DNS Records
+
+```bash
+# Add these MX records in Namecheap for professional email
+# (adjust based on your email provider)
+
+# For Google Workspace:
+Type: MX Record, Host: @, Value: 1 aspmx.l.google.com., TTL: 300
+Type: MX Record, Host: @, Value: 5 alt1.aspmx.l.google.com., TTL: 300
+Type: MX Record, Host: @, Value: 5 alt2.aspmx.l.google.com., TTL: 300
+Type: MX Record, Host: @, Value: 10 alt3.aspmx.l.google.com., TTL: 300
+Type: MX Record, Host: @, Value: 10 alt4.aspmx.l.google.com., TTL: 300
+
+# SPF Record (TXT)
+Type: TXT Record, Host: @, Value: "v=spf1 include:_spf.google.com ~all", TTL: 300
+
+# DKIM Record (TXT) - Get this from your email provider
+Type: TXT Record, Host: google._domainkey, Value: "v=DKIM1; k=rsa; p=YOUR_DKIM_KEY", TTL: 300
+
+# DMARC Record (TXT)
+Type: TXT Record, Host: _dmarc, Value: "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com", TTL: 300
+```
+
+## ✅ Step 8: Final Testing and Validation
+
+### Comprehensive Domain Test
+
+```bash
+# Create final validation script
+cat > ~/validate-setup.sh <<EOF
+#!/bin/bash
+
+DOMAIN="yourdomain.com"
+
+echo "=== Final Domain Setup Validation ==="
+echo "Date: \$(date)"
+echo "Domain: \$DOMAIN"
+echo
+
+# Test 1: DNS Resolution
+echo "1. Testing DNS resolution..."
+for subdomain in "" "www" "staging" "dev" "api" "admin"; do
+    if [ -z "\$subdomain" ]; then
+        test_domain="\$DOMAIN"
+    else
+        test_domain="\$subdomain.\$DOMAIN"
+    fi
+
+    IP=\$(dig +short \$test_domain)
+    if [ -n "\$IP" ]; then
+        echo "✅ \$test_domain resolves to \$IP"
+    else
+        echo "❌ \$test_domain does not resolve"
+    fi
+done
+
+# Test 2: SSL Certificates
+echo
+echo "2. Testing SSL certificates..."
+for subdomain in "" "www" "staging" "dev" "api" "admin"; do
+    if [ -z "\$subdomain" ]; then
+        test_domain="\$DOMAIN"
+    else
+        test_domain="\$subdomain.\$DOMAIN"
+    fi
+
+    if echo | openssl s_client -servername \$test_domain -connect \$test_domain:443 2>/dev/null | openssl x509 -noout -subject > /dev/null 2>&1; then
+        echo "✅ \$test_domain SSL certificate is valid"
+    else
+        echo "❌ \$test_domain SSL certificate is invalid or missing"
+    fi
+done
+
+# Test 3: HTTP/HTTPS Redirects
+echo
+echo "3. Testing HTTP to HTTPS redirects..."
+for subdomain in "" "www" "staging" "dev"; do
+    if [ -z "\$subdomain" ]; then
+        test_domain="\$DOMAIN"
+    else
+        test_domain="\$subdomain.\$DOMAIN"
+    fi
+
+    REDIRECT=\$(curl -s -o /dev/null -w "%{redirect_url}" "http://\$test_domain")
+    if [[ "\$REDIRECT" == https://* ]]; then
+        echo "✅ \$test_domain redirects to HTTPS"
+    else
+        echo "❌ \$test_domain does not redirect to HTTPS properly"
+    fi
+done
+
+# Test 4: Application Health
+echo
+echo "4. Testing application health..."
+HEALTH_ENDPOINTS=(
+    "https://\$DOMAIN/health:Production"
+    "https://staging.\$DOMAIN/health:Staging"
+    "https://dev.\$DOMAIN/health:Development"
+)
+
+for endpoint_info in "\${HEALTH_ENDPOINTS[@]}"; do
+    IFS=':' read -r endpoint name <<< "\$endpoint_info"
+
+    HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" "\$endpoint")
+    if [ "\$HTTP_CODE" = "200" ]; then
+        echo "✅ \$name (\$endpoint) is healthy"
+    else
+        echo "❌ \$name (\$endpoint) returned HTTP \$HTTP_CODE"
+    fi
+done
+
+# Test 5: Performance check
+echo
+echo "5. Testing performance..."
+LOAD_TIME=\$(curl -s -o /dev/null -w "%{time_total}" "https://\$DOMAIN")
+echo "📊 Main domain load time: \${LOAD_TIME}s"
+
+if (( \$(echo "\$LOAD_TIME < 2.0" | bc -l) )); then
+    echo "✅ Performance is good (< 2s)"
+else
+    echo "⚠️  Performance could be improved (> 2s)"
+fi
+
+echo
+echo "=== Validation Complete ==="
+echo "Check /mnt/app-data/logs/ for detailed monitoring logs"
+EOF
+
+chmod +x ~/validate-setup.sh
+./validate-setup.sh
+```
+
+## 🎉 What You've Accomplished
+
+Congratulations! You have completed the entire Digital Ocean mastery series with a professional domain setup:
+
+✅ **Custom Domains**: Professional domain configuration with Namecheap DNS  
+✅ **SSL Certificates**: Automated Let's Encrypt certificates with auto-renewal  
+✅ **Multi-Environment Domains**: Separate subdomains for production, staging, and development  
+✅ **Advanced Nginx**: High-performance reverse proxy with security headers  
+✅ **Domain Monitoring**: Automated monitoring of SSL, DNS, and performance  
+✅ **Performance Optimization**: CDN-ready configuration and performance testing  
+✅ **Professional Email**: DNS records for professional email setup  
+✅ **Security Features**: IP whitelisting, basic auth, and security headers
+
+## 🌐 Final Domain Architecture
+
+| Domain                 | Environment | Purpose                 | Security                      |
+| ---------------------- | ----------- | ----------------------- | ----------------------------- |
+| yourdomain.com         | Production  | Main application        | SSL, Security headers         |
+| www.yourdomain.com     | Production  | Redirect to main        | SSL redirect                  |
+| staging.yourdomain.com | Staging     | Staging environment     | SSL, Optional basic auth      |
+| dev.yourdomain.com     | Development | Development environment | SSL, IP whitelist             |
+| api.yourdomain.com     | Production  | API gateway             | SSL, CORS, Rate limiting      |
+| admin.yourdomain.com   | Production  | Admin panel             | SSL, IP whitelist, Basic auth |
+
+## 🔗 Quick Reference Commands
+
+```bash
+# Domain and SSL management
+./dns-check.sh                    # Check DNS resolution
+./generate-ssl.sh                 # Generate SSL certificates
+./renew-ssl.sh                     # Renew SSL certificates
+./deploy-nginx.sh                  # Deploy nginx configuration
+
+# Monitoring
+./monitor-domains.sh               # Monitor all domains
+./ssl-monitor.sh                   # Monitor SSL certificates
+./performance-test.sh              # Test performance
+./validate-setup.sh                # Complete validation
+
+# Manual SSL renewal
+sudo certbot renew --standalone
+
+# Check nginx configuration
+sudo nginx -t
+sudo systemctl reload nginx
+
+# View logs
+tail -f /mnt/app-data/logs/domain-monitor.log
+tail -f /mnt/app-data/logs/ssl-alerts.log
+tail -f /var/log/nginx/access.log
+```
+
+## 📚 Complete Series Summary
+
+Over the course of this 6-part series, you have built:
+
+1. **Part 1**: Secure droplet with block storage and basic security
+2. **Part 2**: PostgreSQL database with secure remote access
+3. **Part 3**: Docker containerization with monitoring and management
+4. **Part 4**: Node.js deployment with GitHub Actions CI/CD
+5. **Part 5**: Multi-environment setup with branch-based deployments
+6. **Part 6**: Professional domain management with SSL and monitoring
+
+## 🚀 What's Next?
+
+Your infrastructure is now production-ready! Consider these advanced topics:
+
+- **Kubernetes**: Scale beyond single-server deployments
+- **Monitoring Stack**: Implement Prometheus, Grafana, and alerting
+- **Backup Strategies**: Automated backups with retention policies
+- **Security Hardening**: Implement WAF, DDoS protection, and security scanning
+- **Performance Optimization**: Database tuning, caching strategies, and CDN
+- **Disaster Recovery**: Multi-region deployments and failover strategies
+
+---
+
+_Congratulations on completing the Digital Ocean mastery series! You now have a professional, scalable, and secure infrastructure ready for production workloads._
+
+**Have questions or want to share your setup?** Feel free to reach out! 🚀

@@ -1,0 +1,1321 @@
+---
+title: 'Digital Ocean Mastery Part 5: Multi-Environment Deployments'
+description: 'Set up staging, production, and development environments on Digital Ocean. Deploy different branches to separate environments with automated workflows.'
+date: 'September 14, 2025'
+author: 'Joshua Ansah'
+category: 'DevOps'
+tags:
+  ['Multi-Environment', 'Staging', 'Production', 'Branches', 'Digital Ocean']
+featured: true
+thumbnail: '/images/blog/do-part-5.jpg'
+---
+
+# Digital Ocean Mastery Part 5: Multi-Environment Deployments
+
+Welcome to Part 5 of our Digital Ocean mastery series! Building on our automated deployment pipeline, we'll now create multiple environments (development, staging, and production) with branch-based deployment strategies. This setup enables safe testing and gradual rollouts.
+
+## 🎯 What You'll Learn
+
+In this comprehensive guide, we'll cover:
+
+- Setting up multiple environments on a single droplet
+- Branch-based deployment strategies
+- Environment-specific configurations and resources
+- Database isolation between environments
+- Network segmentation for security
+- Environment promotion workflows
+- Resource management and optimization
+- Monitoring across multiple environments
+
+## 📋 Prerequisites
+
+Before starting, ensure you have:
+
+- Completed [Parts 1-4](/blog/digital-ocean-part-1-droplet-storage-setup) of this series
+- Understanding of Git branching strategies
+- Basic knowledge of environment management
+- Access to your GitHub repository with proper branch structure
+
+## 🏗️ Step 1: Environment Architecture Setup
+
+### Create Environment Directory Structure
+
+```bash
+# Connect to your droplet
+ssh deploy@YOUR_DROPLET_IP
+
+# Create environment-specific directories
+mkdir -p /mnt/app-data/environments/{production,staging,development}
+
+# Create shared resources directory
+mkdir -p /mnt/app-data/shared/{databases,logs,backups,configs}
+
+# Set up environment-specific subdirectories
+for env in production staging development; do
+    mkdir -p /mnt/app-data/environments/$env/{app,configs,logs,data}
+done
+
+# Create symlinks for easy access
+ln -s /mnt/app-data/environments ~/environments
+```
+
+### Environment Resource Allocation
+
+```bash
+# Create resource allocation script
+cat > ~/setup-environments.sh <<EOF
+#!/bin/bash
+
+# Environment resource allocation
+TOTAL_MEMORY=2048  # 2GB droplet
+PRODUCTION_MEMORY=1024
+STAGING_MEMORY=512
+DEVELOPMENT_MEMORY=256
+
+echo "Setting up environment resource allocation..."
+
+# Create environment-specific Docker Compose overrides
+for env in production staging development; do
+    case $env in
+        production)
+            memory_limit="${PRODUCTION_MEMORY}m"
+            cpu_limit="0.7"
+            replicas=1
+            ;;
+        staging)
+            memory_limit="${STAGING_MEMORY}m"
+            cpu_limit="0.2"
+            replicas=1
+            ;;
+        development)
+            memory_limit="${DEVELOPMENT_MEMORY}m"
+            cpu_limit="0.1"
+            replicas=1
+            ;;
+    esac
+
+    cat > /mnt/app-data/environments/$env/docker-compose.override.yml <<EOL
+version: '3.8'
+
+services:
+  app:
+    deploy:
+      resources:
+        limits:
+          memory: $memory_limit
+          cpus: '$cpu_limit'
+        reservations:
+          memory: $(($memory_limit/2))m
+          cpus: '0.1'
+      replicas: $replicas
+
+  redis:
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.1'
+        reservations:
+          memory: 64m
+          cpus: '0.05'
+EOL
+
+done
+
+echo "Environment resource allocation completed!"
+EOF
+
+chmod +x ~/setup-environments.sh
+./setup-environments.sh
+```
+
+## 🌐 Step 2: Network Segmentation
+
+### Create Environment-Specific Networks
+
+```bash
+# Create isolated networks for each environment
+docker network create --driver bridge \
+    --subnet=172.20.0.0/24 \
+    --gateway=172.20.0.1 \
+    production-network
+
+docker network create --driver bridge \
+    --subnet=172.21.0.0/24 \
+    --gateway=172.21.0.1 \
+    staging-network
+
+docker network create --driver bridge \
+    --subnet=172.22.0.0/24 \
+    --gateway=172.22.0.1 \
+    development-network
+
+# Create a shared database network
+docker network create --driver bridge \
+    --subnet=172.23.0.0/24 \
+    --gateway=172.23.0.1 \
+    database-network
+
+# List all networks
+docker network ls
+```
+
+### Configure Port Allocation
+
+```bash
+# Create port allocation configuration
+cat > ~/environments/port-allocation.conf <<EOF
+# Port Allocation for Environments
+# Format: ENVIRONMENT:SERVICE:HOST_PORT:CONTAINER_PORT
+
+# Production Environment (80xx range)
+production:app:8000:3000
+production:nginx:80:80
+production:nginx-ssl:443:443
+production:redis:6380:6379
+
+# Staging Environment (81xx range)
+staging:app:8100:3000
+staging:nginx:8101:80
+staging:redis:6381:6379
+
+# Development Environment (82xx range)
+development:app:8200:3000
+development:nginx:8201:80
+development:redis:6382:6379
+
+# Monitoring (90xx range)
+monitoring:portainer:9000:9000
+monitoring:grafana:9001:3000
+monitoring:prometheus:9002:9090
+EOF
+```
+
+## 🗄️ Step 3: Database Environment Isolation
+
+### Create Environment-Specific Databases
+
+```bash
+# Connect to PostgreSQL and create environment databases
+sudo -i -u postgres psql
+```
+
+```sql
+-- Create environment-specific databases
+CREATE DATABASE myapp_production;
+CREATE DATABASE myapp_staging;
+CREATE DATABASE myapp_development;
+
+-- Create environment-specific users
+CREATE USER myapp_prod WITH PASSWORD 'prod_secure_password';
+CREATE USER myapp_staging WITH PASSWORD 'staging_secure_password';
+CREATE USER myapp_dev WITH PASSWORD 'dev_secure_password';
+
+-- Grant privileges to respective databases
+GRANT ALL PRIVILEGES ON DATABASE myapp_production TO myapp_prod;
+GRANT ALL PRIVILEGES ON DATABASE myapp_staging TO myapp_staging;
+GRANT ALL PRIVILEGES ON DATABASE myapp_development TO myapp_dev;
+
+-- Configure connection limits per environment
+ALTER USER myapp_prod CONNECTION LIMIT 20;
+ALTER USER myapp_staging CONNECTION LIMIT 10;
+ALTER USER myapp_dev CONNECTION LIMIT 5;
+
+-- Exit PostgreSQL
+\q
+```
+
+```bash
+# Exit postgres user
+exit
+```
+
+### Environment Database Configuration
+
+```bash
+# Create database initialization scripts for each environment
+for env in production staging development; do
+    cat > ~/environments/$env/init-db.sql <<EOF
+-- Database initialization for $env environment
+CREATE SCHEMA IF NOT EXISTS app_schema;
+SET search_path TO app_schema, public;
+
+-- Example tables (adjust based on your application)
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS logs (
+    id SERIAL PRIMARY KEY,
+    level VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Environment-specific configurations
+INSERT INTO app_configuration (key, value) VALUES
+    ('environment', '$env'),
+    ('debug_mode', $([ "$env" = "development" ] && echo "true" || echo "false")),
+    ('log_level', $([ "$env" = "production" ] && echo "'error'" || echo "'debug'"))
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+EOF
+done
+```
+
+## 📝 Step 4: Environment-Specific Configurations
+
+### Create Environment Configuration Files
+
+```bash
+# Production environment configuration
+cat > ~/environments/production/.env <<EOF
+# Production Environment Configuration
+NODE_ENV=production
+PORT=3000
+DEBUG=false
+
+# Database
+DATABASE_URL=postgresql://myapp_prod:prod_secure_password@localhost:5432/myapp_production?sslmode=require
+
+# Redis
+REDIS_URL=redis://:prod_redis_password@localhost:6380
+REDIS_PASSWORD=prod_redis_password
+
+# Application
+APP_NAME=MyApp Production
+APP_VERSION=1.0.0
+LOG_LEVEL=error
+MAX_REQUEST_SIZE=10mb
+
+# Security
+SESSION_SECRET=production_session_secret_very_long_and_secure
+JWT_SECRET=production_jwt_secret_very_long_and_secure
+CORS_ORIGIN=https://yourdomain.com
+
+# External Services
+API_BASE_URL=https://api.yourdomain.com
+STATIC_FILES_URL=https://cdn.yourdomain.com
+EOF
+
+# Staging environment configuration
+cat > ~/environments/staging/.env <<EOF
+# Staging Environment Configuration
+NODE_ENV=staging
+PORT=3000
+DEBUG=true
+
+# Database
+DATABASE_URL=postgresql://myapp_staging:staging_secure_password@localhost:5432/myapp_staging?sslmode=require
+
+# Redis
+REDIS_URL=redis://:staging_redis_password@localhost:6381
+REDIS_PASSWORD=staging_redis_password
+
+# Application
+APP_NAME=MyApp Staging
+APP_VERSION=staging
+LOG_LEVEL=debug
+MAX_REQUEST_SIZE=10mb
+
+# Security
+SESSION_SECRET=staging_session_secret_change_in_production
+JWT_SECRET=staging_jwt_secret_change_in_production
+CORS_ORIGIN=https://staging.yourdomain.com
+
+# External Services
+API_BASE_URL=https://staging-api.yourdomain.com
+STATIC_FILES_URL=https://staging-cdn.yourdomain.com
+EOF
+
+# Development environment configuration
+cat > ~/environments/development/.env <<EOF
+# Development Environment Configuration
+NODE_ENV=development
+PORT=3000
+DEBUG=true
+
+# Database
+DATABASE_URL=postgresql://myapp_dev:dev_secure_password@localhost:5432/myapp_development?sslmode=require
+
+# Redis
+REDIS_URL=redis://:dev_redis_password@localhost:6382
+REDIS_PASSWORD=dev_redis_password
+
+# Application
+APP_NAME=MyApp Development
+APP_VERSION=dev
+LOG_LEVEL=debug
+MAX_REQUEST_SIZE=50mb
+
+# Security
+SESSION_SECRET=dev_session_secret_not_for_production
+JWT_SECRET=dev_jwt_secret_not_for_production
+CORS_ORIGIN=*
+
+# External Services
+API_BASE_URL=http://localhost:8200
+STATIC_FILES_URL=http://localhost:8200/static
+EOF
+
+# Secure environment files
+chmod 600 ~/environments/*/.env
+```
+
+### Create Environment-Specific Docker Compose Files
+
+```bash
+# Production Docker Compose
+cat > ~/environments/production/docker-compose.yml <<EOF
+version: '3.8'
+
+services:
+  app:
+    image: \${APP_IMAGE:-ghcr.io/your-username/your-repo:latest}
+    container_name: production-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:3000"
+    volumes:
+      - /mnt/app-data/environments/production/logs:/app/logs
+      - /mnt/app-data/shared/configs:/app/configs:ro
+    networks:
+      - production-network
+      - database-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: production-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass \${REDIS_PASSWORD}
+    ports:
+      - "6380:6379"
+    volumes:
+      - /mnt/app-data/environments/production/data/redis:/data
+    networks:
+      - production-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: production-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /mnt/app-data/shared/ssl-certs:/etc/ssl/certs:ro
+      - /mnt/app-data/environments/production/logs/nginx:/var/log/nginx
+    networks:
+      - production-network
+    depends_on:
+      - app
+
+networks:
+  production-network:
+    external: true
+  database-network:
+    external: true
+EOF
+
+# Staging Docker Compose
+cat > ~/environments/staging/docker-compose.yml <<EOF
+version: '3.8'
+
+services:
+  app:
+    image: \${APP_IMAGE:-ghcr.io/your-username/your-repo:staging}
+    container_name: staging-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8100:3000"
+    volumes:
+      - /mnt/app-data/environments/staging/logs:/app/logs
+      - /mnt/app-data/shared/configs:/app/configs:ro
+    networks:
+      - staging-network
+      - database-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: staging-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass \${REDIS_PASSWORD}
+    ports:
+      - "6381:6379"
+    volumes:
+      - /mnt/app-data/environments/staging/data/redis:/data
+    networks:
+      - staging-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: staging-nginx
+    restart: unless-stopped
+    ports:
+      - "8101:80"
+    volumes:
+      - ./nginx-staging.conf:/etc/nginx/nginx.conf:ro
+      - /mnt/app-data/environments/staging/logs/nginx:/var/log/nginx
+    networks:
+      - staging-network
+    depends_on:
+      - app
+
+networks:
+  staging-network:
+    external: true
+  database-network:
+    external: true
+EOF
+
+# Development Docker Compose
+cat > ~/environments/development/docker-compose.yml <<EOF
+version: '3.8'
+
+services:
+  app:
+    image: \${APP_IMAGE:-ghcr.io/your-username/your-repo:dev}
+    container_name: development-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8200:3000"
+    volumes:
+      - /mnt/app-data/environments/development/logs:/app/logs
+      - /mnt/app-data/shared/configs:/app/configs:ro
+    networks:
+      - development-network
+      - database-network
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: development-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass \${REDIS_PASSWORD}
+    ports:
+      - "6382:6379"
+    volumes:
+      - /mnt/app-data/environments/development/data/redis:/data
+    networks:
+      - development-network
+
+networks:
+  development-network:
+    external: true
+  database-network:
+    external: true
+EOF
+```
+
+## 🚀 Step 5: Branch-Based Deployment Strategy
+
+### Update GitHub Actions Workflow
+
+```yaml
+# .github/workflows/multi-environment-deploy.yml
+name: Multi-Environment Deploy
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    branches: [main, staging]
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      environment: ${{ steps.env.outputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: env
+        run: |
+          if [[ ${{ github.ref }} == 'refs/heads/main' ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "image-suffix=" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.ref }} == 'refs/heads/staging' ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "image-suffix=-staging" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.ref }} == 'refs/heads/develop' ]]; then
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "image-suffix=-dev" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch,suffix=${{ steps.env.outputs.image-suffix }}
+            type=sha,prefix=${{ steps.env.outputs.environment }}-
+            type=raw,value=${{ steps.env.outputs.environment }}-latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-development:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+
+    steps:
+      - name: Deploy to Development
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd ~/environments/development
+            export APP_IMAGE="${{ needs.build.outputs.image-tag }}"
+            ./deploy.sh development
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/staging'
+    environment: staging
+
+    steps:
+      - name: Deploy to Staging
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd ~/environments/staging
+            export APP_IMAGE="${{ needs.build.outputs.image-tag }}"
+            ./deploy.sh staging
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Deploy to Production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DROPLET_IP }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          script: |
+            cd ~/environments/production
+            export APP_IMAGE="${{ needs.build.outputs.image-tag }}"
+            ./deploy.sh production
+
+  promote-to-staging:
+    needs: deploy-development
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: promote-to-staging
+
+    steps:
+      - name: Create promotion PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Auto: Promote develop to staging',
+              head: 'develop',
+              base: 'staging',
+              body: 'Automated promotion from development to staging environment.'
+            });
+```
+
+### Create Environment-Specific Deployment Scripts
+
+```bash
+# Create deployment script for each environment
+for env in production staging development; do
+    cat > ~/environments/$env/deploy.sh <<EOF
+#!/bin/bash
+
+set -e
+
+ENVIRONMENT=$1
+IMAGE_TAG=\${APP_IMAGE:-\$2}
+
+if [ -z "\$ENVIRONMENT" ] || [ -z "\$IMAGE_TAG" ]; then
+    echo "Usage: \$0 <environment> [image_tag]"
+    echo "Environment: production, staging, development"
+    exit 1
+fi
+
+echo "Deploying \$IMAGE_TAG to \$ENVIRONMENT environment..."
+
+# Configuration
+COMPOSE_FILE="docker-compose.yml"
+BACKUP_DIR="/mnt/app-data/backups/deployments/\$ENVIRONMENT/\$(date +%Y%m%d_%H%M%S)"
+
+# Create backup
+mkdir -p "\$BACKUP_DIR"
+docker-compose -f \$COMPOSE_FILE config > "\$BACKUP_DIR/docker-compose-backup.yml"
+echo "\$IMAGE_TAG" > "\$BACKUP_DIR/image-tag.txt"
+
+# Health check function
+health_check() {
+    local container_name=\$1
+    local port=\$2
+    local max_attempts=30
+    local attempt=1
+
+    while [ \$attempt -le \$max_attempts ]; do
+        if curl -f "http://localhost:\$port/health" > /dev/null 2>&1; then
+            echo "\$container_name is healthy!"
+            return 0
+        fi
+        sleep 10
+        attempt=\$((attempt + 1))
+    done
+
+    echo "\$container_name failed health check"
+    return 1
+}
+
+# Get port based on environment
+case \$ENVIRONMENT in
+    production) PORT=8000 ;;
+    staging) PORT=8100 ;;
+    development) PORT=8200 ;;
+    *) echo "Unknown environment: \$ENVIRONMENT"; exit 1 ;;
+esac
+
+# Stop current containers
+echo "Stopping current containers..."
+docker-compose -f \$COMPOSE_FILE down
+
+# Pull new image
+echo "Pulling new image: \$IMAGE_TAG"
+docker pull "\$IMAGE_TAG"
+
+# Start new containers
+echo "Starting new containers..."
+export APP_IMAGE="\$IMAGE_TAG"
+docker-compose -f \$COMPOSE_FILE up -d
+
+# Wait for containers to initialize
+sleep 20
+
+# Health check
+if health_check "\$ENVIRONMENT-app" \$PORT; then
+    echo "Deployment to \$ENVIRONMENT successful!"
+
+    # Log successful deployment
+    echo "\$(date): Successful deployment of \$IMAGE_TAG to \$ENVIRONMENT" >> /mnt/app-data/logs/deployments-\$ENVIRONMENT.log
+
+    # Clean up old images (keep last 3)
+    docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | grep "\$IMAGE_TAG" | tail -n +4 | awk '{print \$1}' | xargs -r docker rmi || true
+else
+    echo "Deployment to \$ENVIRONMENT failed! Rolling back..."
+
+    # Rollback
+    docker-compose -f \$COMPOSE_FILE down
+    if [ -f "\$BACKUP_DIR/docker-compose-backup.yml" ]; then
+        OLD_IMAGE=\$(cat "\$BACKUP_DIR/image-tag.txt" 2>/dev/null || echo "")
+        if [ -n "\$OLD_IMAGE" ]; then
+            export APP_IMAGE="\$OLD_IMAGE"
+            docker-compose -f \$COMPOSE_FILE up -d
+        fi
+    fi
+
+    echo "\$(date): Failed deployment of \$IMAGE_TAG to \$ENVIRONMENT - rolled back" >> /mnt/app-data/logs/deployments-\$ENVIRONMENT.log
+    exit 1
+fi
+EOF
+
+    chmod +x ~/environments/$env/deploy.sh
+done
+```
+
+## 🔄 Step 6: Environment Promotion Workflow
+
+### Create Promotion Scripts
+
+```bash
+# Create environment promotion script
+cat > ~/promote-environment.sh <<EOF
+#!/bin/bash
+
+set -e
+
+SOURCE_ENV=\$1
+TARGET_ENV=\$2
+
+if [ -z "\$SOURCE_ENV" ] || [ -z "\$TARGET_ENV" ]; then
+    echo "Usage: \$0 <source_environment> <target_environment>"
+    echo "Environments: development, staging, production"
+    exit 1
+fi
+
+echo "Promoting from \$SOURCE_ENV to \$TARGET_ENV..."
+
+# Validate environments
+for env in "\$SOURCE_ENV" "\$TARGET_ENV"; do
+    if [ ! -d "~/environments/\$env" ]; then
+        echo "Environment directory not found: \$env"
+        exit 1
+    fi
+done
+
+# Get current image from source environment
+cd ~/environments/\$SOURCE_ENV
+SOURCE_IMAGE=\$(docker-compose ps -q app | xargs docker inspect --format='{{.Config.Image}}')
+
+if [ -z "\$SOURCE_IMAGE" ]; then
+    echo "Could not determine source image from \$SOURCE_ENV"
+    exit 1
+fi
+
+echo "Promoting image: \$SOURCE_IMAGE"
+
+# Health check source environment
+if ! curl -f "http://localhost:\$(cat port.txt 2>/dev/null || echo 8000)/health" > /dev/null 2>&1; then
+    echo "Source environment \$SOURCE_ENV is not healthy. Aborting promotion."
+    exit 1
+fi
+
+# Deploy to target environment
+cd ~/environments/\$TARGET_ENV
+export APP_IMAGE="\$SOURCE_IMAGE"
+./deploy.sh \$TARGET_ENV "\$SOURCE_IMAGE"
+
+echo "Promotion from \$SOURCE_ENV to \$TARGET_ENV completed!"
+
+# Log promotion
+echo "\$(date): Promoted \$SOURCE_IMAGE from \$SOURCE_ENV to \$TARGET_ENV" >> /mnt/app-data/logs/promotions.log
+EOF
+
+chmod +x ~/promote-environment.sh
+```
+
+### Database Migration Workflow
+
+```bash
+# Create database migration script
+cat > ~/migrate-database.sh <<EOF
+#!/bin/bash
+
+set -e
+
+ENVIRONMENT=\$1
+MIGRATION_DIRECTION=\${2:-up}
+
+if [ -z "\$ENVIRONMENT" ]; then
+    echo "Usage: \$0 <environment> [up|down]"
+    exit 1
+fi
+
+echo "Running database migrations for \$ENVIRONMENT environment..."
+
+# Load environment configuration
+cd ~/environments/\$ENVIRONMENT
+source .env
+
+# Run migrations (adjust based on your migration tool)
+case \$ENVIRONMENT in
+    production)
+        echo "Running production migrations with extra caution..."
+        # Backup database before migration
+        pg_dump "\$DATABASE_URL" > "/mnt/app-data/backups/db-before-migration-\$(date +%Y%m%d_%H%M%S).sql"
+        ;;
+    staging)
+        echo "Running staging migrations..."
+        ;;
+    development)
+        echo "Running development migrations..."
+        ;;
+esac
+
+# Run migrations using your application's migration command
+# Example for Node.js with a migration framework:
+docker exec \$ENVIRONMENT-app npm run migrate:\$MIGRATION_DIRECTION
+
+echo "Database migrations completed for \$ENVIRONMENT"
+EOF
+
+chmod +x ~/migrate-database.sh
+```
+
+## 📊 Step 7: Multi-Environment Monitoring
+
+### Create Environment Monitoring Dashboard
+
+```bash
+# Create comprehensive monitoring script
+cat > ~/monitor-environments.sh <<EOF
+#!/bin/bash
+
+LOG_FILE="/mnt/app-data/logs/environment-monitor.log"
+
+echo "=== Multi-Environment Monitor Report - \$(date) ===" >> \$LOG_FILE
+
+for env in production staging development; do
+    echo "--- \$env Environment ---" >> \$LOG_FILE
+
+    # Check container status
+    cd ~/environments/\$env
+
+    # Get expected port
+    case \$env in
+        production) PORT=8000 ;;
+        staging) PORT=8100 ;;
+        development) PORT=8200 ;;
+    esac
+
+    # Container health
+    if docker-compose ps | grep -q "Up"; then
+        echo "✅ Containers: Running" >> \$LOG_FILE
+    else
+        echo "❌ Containers: Stopped or Failed" >> \$LOG_FILE
+    fi
+
+    # Application health
+    if curl -f "http://localhost:\$PORT/health" > /dev/null 2>&1; then
+        echo "✅ Application: Healthy" >> \$LOG_FILE
+    else
+        echo "❌ Application: Unhealthy" >> \$LOG_FILE
+    fi
+
+    # Resource usage
+    APP_CONTAINER="\$env-app"
+    if docker ps --format '{{.Names}}' | grep -q "\$APP_CONTAINER"; then
+        STATS=\$(docker stats --no-stream --format "{{.CPUPerc}}\t{{.MemUsage}}" \$APP_CONTAINER)
+        echo "📊 Resources: \$STATS" >> \$LOG_FILE
+    else
+        echo "📊 Resources: Container not running" >> \$LOG_FILE
+    fi
+
+    echo "" >> \$LOG_FILE
+done
+
+echo "================================" >> \$LOG_FILE
+echo "" >> \$LOG_FILE
+EOF
+
+chmod +x ~/monitor-environments.sh
+
+# Add to crontab for regular monitoring
+crontab -e
+# Add: */15 * * * * /home/deploy/monitor-environments.sh
+```
+
+### Create Environment Health Check API
+
+```bash
+# Create a simple health check aggregator
+cat > ~/health-check-api.py <<EOF
+#!/usr/bin/env python3
+
+import json
+import subprocess
+import sys
+from datetime import datetime
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/health/all':
+            health_data = self.check_all_environments()
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(health_data, indent=2).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def check_all_environments(self):
+        environments = ['production', 'staging', 'development']
+        ports = {'production': 8000, 'staging': 8100, 'development': 8200}
+
+        health_data = {
+            'timestamp': datetime.now().isoformat(),
+            'environments': {}
+        }
+
+        for env in environments:
+            try:
+                # Check if container is running
+                container_check = subprocess.run(
+                    ['docker', 'ps', '--filter', f'name={env}-app', '--format', '{{.Status}}'],
+                    capture_output=True, text=True
+                )
+
+                # Check application health endpoint
+                health_check = subprocess.run(
+                    ['curl', '-f', f'http://localhost:{ports[env]}/health'],
+                    capture_output=True, text=True, timeout=5
+                )
+
+                health_data['environments'][env] = {
+                    'container_running': 'Up' in container_check.stdout,
+                    'application_healthy': health_check.returncode == 0,
+                    'port': ports[env],
+                    'status': 'healthy' if health_check.returncode == 0 else 'unhealthy'
+                }
+            except Exception as e:
+                health_data['environments'][env] = {
+                    'container_running': False,
+                    'application_healthy': False,
+                    'port': ports[env],
+                    'status': 'error',
+                    'error': str(e)
+                }
+
+        return health_data
+
+if __name__ == '__main__':
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 9999
+    server = HTTPServer(('0.0.0.0', port), HealthCheckHandler)
+    print(f'Health check API running on port {port}')
+    server.serve_forever()
+EOF
+
+chmod +x ~/health-check-api.py
+
+# Create systemd service for health check API
+sudo tee /etc/systemd/system/health-check-api.service > /dev/null <<EOF
+[Unit]
+Description=Environment Health Check API
+After=network.target
+
+[Service]
+Type=simple
+User=deploy
+WorkingDirectory=/home/deploy
+ExecStart=/home/deploy/health-check-api.py 9999
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start the service
+sudo systemctl enable health-check-api
+sudo systemctl start health-check-api
+```
+
+## 🔄 Step 8: Environment Synchronization
+
+### Create Data Synchronization Scripts
+
+```bash
+# Create data sync script (for development/staging)
+cat > ~/sync-data.sh <<EOF
+#!/bin/bash
+
+set -e
+
+SOURCE_ENV=\$1
+TARGET_ENV=\$2
+DATA_TYPE=\${3:-all}
+
+if [ -z "\$SOURCE_ENV" ] || [ -z "\$TARGET_ENV" ]; then
+    echo "Usage: \$0 <source_env> <target_env> [database|files|all]"
+    exit 1
+fi
+
+# Safety check - never sync TO production
+if [ "\$TARGET_ENV" = "production" ]; then
+    echo "ERROR: Cannot sync TO production environment for safety reasons"
+    exit 1
+fi
+
+echo "Syncing \$DATA_TYPE from \$SOURCE_ENV to \$TARGET_ENV..."
+
+# Load environment configurations
+source ~/environments/\$SOURCE_ENV/.env
+SOURCE_DB_URL=\$DATABASE_URL
+
+source ~/environments/\$TARGET_ENV/.env
+TARGET_DB_URL=\$DATABASE_URL
+
+if [ "\$DATA_TYPE" = "database" ] || [ "\$DATA_TYPE" = "all" ]; then
+    echo "Syncing database..."
+
+    # Create temporary dump
+    TEMP_DUMP="/tmp/sync-\$(date +%Y%m%d_%H%M%S).sql"
+
+    # Dump source database
+    pg_dump "\$SOURCE_DB_URL" > "\$TEMP_DUMP"
+
+    # Restore to target database (with confirmation)
+    echo "WARNING: This will replace all data in \$TARGET_ENV database!"
+    read -p "Are you sure? (yes/no): " confirm
+
+    if [ "\$confirm" = "yes" ]; then
+        # Drop and recreate target database
+        TARGET_DB_NAME=\$(echo "\$TARGET_DB_URL" | sed 's/.*\///' | sed 's/\?.*//')
+        sudo -u postgres dropdb "\$TARGET_DB_NAME"
+        sudo -u postgres createdb "\$TARGET_DB_NAME"
+
+        # Restore data
+        psql "\$TARGET_DB_URL" < "\$TEMP_DUMP"
+
+        echo "Database sync completed"
+    else
+        echo "Database sync cancelled"
+    fi
+
+    # Cleanup
+    rm "\$TEMP_DUMP"
+fi
+
+if [ "\$DATA_TYPE" = "files" ] || [ "\$DATA_TYPE" = "all" ]; then
+    echo "Syncing uploaded files..."
+
+    # Sync uploaded files (adjust paths based on your application)
+    rsync -av \
+        ~/environments/\$SOURCE_ENV/data/ \
+        ~/environments/\$TARGET_ENV/data/
+
+    echo "File sync completed"
+fi
+
+echo "Synchronization from \$SOURCE_ENV to \$TARGET_ENV completed!"
+EOF
+
+chmod +x ~/sync-data.sh
+```
+
+## ✅ Step 9: Testing Multi-Environment Setup
+
+### Comprehensive Environment Test
+
+```bash
+# Create comprehensive test script
+cat > ~/test-environments.sh <<EOF
+#!/bin/bash
+
+echo "=== Testing Multi-Environment Setup ==="
+
+# Test 1: Network connectivity
+echo "1. Testing network connectivity..."
+for env in production staging development; do
+    case \$env in
+        production) PORT=8000 ;;
+        staging) PORT=8100 ;;
+        development) PORT=8200 ;;
+    esac
+
+    if curl -f "http://localhost:\$PORT/health" > /dev/null 2>&1; then
+        echo "✅ \$env environment accessible on port \$PORT"
+    else
+        echo "❌ \$env environment not accessible on port \$PORT"
+    fi
+done
+
+# Test 2: Database connectivity
+echo "2. Testing database connectivity..."
+for env in production staging development; do
+    cd ~/environments/\$env
+    source .env
+
+    if pg_isready -d "\$DATABASE_URL" > /dev/null 2>&1; then
+        echo "✅ \$env database connectivity working"
+    else
+        echo "❌ \$env database connectivity failed"
+    fi
+done
+
+# Test 3: Container status
+echo "3. Testing container status..."
+for env in production staging development; do
+    RUNNING_CONTAINERS=\$(docker ps --filter "name=\$env" --format "{{.Names}}" | wc -l)
+    echo "📊 \$env environment: \$RUNNING_CONTAINERS containers running"
+done
+
+# Test 4: Resource isolation
+echo "4. Testing resource isolation..."
+docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" | grep -E "(production|staging|development)"
+
+# Test 5: Health check API
+echo "5. Testing health check API..."
+if curl -f "http://localhost:9999/health/all" > /dev/null 2>&1; then
+    echo "✅ Health check API working"
+    curl -s "http://localhost:9999/health/all" | python3 -m json.tool
+else
+    echo "❌ Health check API not working"
+fi
+
+echo "=== Environment Testing Completed ==="
+EOF
+
+chmod +x ~/test-environments.sh
+./test-environments.sh
+```
+
+## 🎉 What You've Accomplished
+
+Congratulations! You now have a sophisticated multi-environment setup with:
+
+✅ **Environment Isolation**: Separate production, staging, and development environments  
+✅ **Branch-Based Deployment**: Automatic deployments based on Git branches  
+✅ **Resource Management**: Proper resource allocation and limits per environment  
+✅ **Database Isolation**: Separate databases with environment-specific users  
+✅ **Network Segmentation**: Isolated networks for security  
+✅ **Promotion Workflows**: Safe promotion between environments  
+✅ **Comprehensive Monitoring**: Multi-environment monitoring and alerting  
+✅ **Data Synchronization**: Tools for syncing data between environments
+
+### Environment Summary
+
+| Environment | Branch  | Port | Database          | Network             |
+| ----------- | ------- | ---- | ----------------- | ------------------- |
+| Production  | main    | 8000 | myapp_production  | production-network  |
+| Staging     | staging | 8100 | myapp_staging     | staging-network     |
+| Development | develop | 8200 | myapp_development | development-network |
+
+## 🔗 Quick Reference Commands
+
+```bash
+# Deploy to specific environment
+cd ~/environments/production && ./deploy.sh production
+cd ~/environments/staging && ./deploy.sh staging
+cd ~/environments/development && ./deploy.sh development
+
+# Promote between environments
+./promote-environment.sh development staging
+./promote-environment.sh staging production
+
+# Monitor all environments
+./monitor-environments.sh
+curl http://localhost:9999/health/all
+
+# Sync data (development/staging only)
+./sync-data.sh production staging database
+
+# Test all environments
+./test-environments.sh
+
+# Check specific environment
+curl http://localhost:8000/health  # Production
+curl http://localhost:8100/health  # Staging
+curl http://localhost:8200/health  # Development
+```
+
+## 🔮 Coming Up in Part 6
+
+In the final part of our series, we'll:
+
+- Configure custom domains and subdomains
+- Set up DNS with Namecheap
+- Implement SSL certificates with Let's Encrypt
+- Configure domain-based routing
+- Set up CDN and performance optimization
+- Implement domain monitoring and management
+
+---
+
+_Ready to make your applications accessible via custom domains? Let's set up professional domain management!_
+
+**Next**: [Digital Ocean Mastery Part 6: Custom Domains with Namecheap DNS](/blog/digital-ocean-part-6-custom-domains-namecheap)

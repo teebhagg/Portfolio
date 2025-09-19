@@ -1,14 +1,13 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
-import styles from './style.module.scss';
 import {
   motion,
-  useMotionValue,
-  useSpring,
   MotionValue,
   SpringOptions,
-  AnimationControls
+  useMotionValue,
+  useSpring
 } from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import styles from './style.module.scss';
 
 interface MouseMoveEvent {
   clientX: number;
@@ -41,41 +40,44 @@ export default function Cursor() {
     y: useSpring(mouse.y, smoothOptions)
   };
 
-  const manageResize = () => {
+  const manageResize = useCallback(() => {
     const isFinePointer = window.matchMedia('(pointer: fine)').matches;
     if (!isFinePointer) {
       setIsVisible(false);
       return;
     }
-  };
+  }, []);
 
-  const manageMouseMove = (e: MouseMoveEvent) => {
-    const isFinePointer = window.matchMedia('(pointer: fine)').matches;
-    if (!isFinePointer) {
-      setIsVisible(false);
-      return;
-    }
-    if (!isVisible) setIsVisible(true);
+  const manageMouseMove = useCallback(
+    (e: MouseMoveEvent) => {
+      const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+      if (!isFinePointer) {
+        setIsVisible(false);
+        return;
+      }
+      if (!isVisible) setIsVisible(true);
 
-    const { clientX, clientY } = e;
-    mouse.x.set(clientX - cursorSize / 2);
-    mouse.y.set(clientY - cursorSize / 2);
-  };
+      const { clientX, clientY } = e;
+      mouse.x.set(clientX - cursorSize / 2);
+      mouse.y.set(clientY - cursorSize / 2);
+    },
+    [isVisible, mouse.x, mouse.y, cursorSize]
+  );
 
-  const manageMouseLeave = () => {
+  const manageMouseLeave = useCallback(() => {
     setIsVisible(false);
-  };
+  }, []);
 
-  const handleMouseDown = (e: MouseEvent) => {
+  const handleMouseDown = useCallback((e: MouseEvent) => {
     // prevent right click to trigger pressed
     if (e.button === 2) return;
 
     setIsPressed(true);
-  };
+  }, []);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsPressed(false);
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener('resize', manageResize);
@@ -101,7 +103,13 @@ export default function Cursor() {
       window.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, []);
+  }, [
+    manageResize,
+    manageMouseLeave,
+    manageMouseMove,
+    handleMouseDown,
+    handleMouseUp
+  ]);
 
   const template = ({
     rotate,

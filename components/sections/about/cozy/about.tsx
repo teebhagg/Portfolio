@@ -31,10 +31,17 @@ function About() {
         </div>
         <div className="space-y-4">
           <p className="mt-6 max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-          I am a dedicated Software Engineer with a passion for crafting elegant and efficient web and mobile applications. With experience in a diverse range of technologies and frameworks, I am eager to contribute to innovative projects and embrace new challenges.
+            I am a dedicated Software Engineer with a passion for crafting
+            elegant and efficient web and mobile applications. With experience
+            in a diverse range of technologies and frameworks, I am eager to
+            contribute to innovative projects and embrace new challenges.
           </p>
           <Button asChild>
-            <Link href="resume.pdf" target="_blank">
+            <Link
+              href="resume.pdf"
+              target="_blank"
+              download={'JOSHUA ANSAH CV - Full Stack.pdf'}
+            >
               View Resume <ArrowUpRightIcon className="ml-2 size-5" />
             </Link>
           </Button>

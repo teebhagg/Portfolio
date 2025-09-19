@@ -1,5 +1,5 @@
-import remarkGfm from 'remark-gfm';
 import createMDX from '@next/mdx';
+import remarkGfm from 'remark-gfm';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -8,6 +8,19 @@ const nextConfig = {
     serverActions: {
       allowedOrigins: ['localhost:3000']
     }
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'github.com',
+        pathname: '/teebhagg/GhanaAPI/blob/main/ghana-api-banner.png'
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com'
+      }
+    ]
   }
 };
 
