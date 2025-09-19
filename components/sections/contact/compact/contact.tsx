@@ -67,21 +67,6 @@ function Contact() {
             <div className="flex space-x-1">
               {contact.socials?.github && (
                 <Button variant="outline" size="icon" asChild>
-                  <a target="_blank" href={contact.socials.youtube}>
-                    <YoutubeIcon className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-              {contact.socials?.twitter && (
-                <Button variant="outline" size="icon" asChild>
-                  <a target="_blank" href={contact.socials.twitter}>
-                    <TwitterIcon className="h-4 w-4" />{' '}
-                    {/* good 'ol twitter icon */}
-                  </a>
-                </Button>
-              )}
-              {contact.socials?.github && (
-                <Button variant="outline" size="icon" asChild>
                   <a target="_blank" href={contact.socials.github}>
                     <GithubIcon className="h-4 w-4" />
                   </a>
