@@ -43,7 +43,7 @@ const projects: Project[] = [
     category: 'Web Development',
     tags: ['React', 'Node.js', 'MongoDB', 'Express.js'],
     githubUrl: 'https://github.com/teebhagg/moyosore-blog',
-    liveUrl: 'https://moyosore.com'
+    liveUrl: 'https://moyo-sore.com'
   },
   {
     name: 'Shine Energy',
@@ -53,7 +53,7 @@ const projects: Project[] = [
     thumbnail: '/images/projects/shine_energy/cover.jpg',
     category: 'Web Development',
     tags: ['Next.js', 'TailwindCSS', 'Framer Motion'],
-    liveUrl: 'https://shine-energy.com'
+    liveUrl: 'https://www.shineenergyghana.com/'
   },
   {
     name: 'Green Ghana',
