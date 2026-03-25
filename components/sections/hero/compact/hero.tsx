@@ -22,7 +22,7 @@ function Hero() {
         </div>
         <Image
           alt="Image"
-          className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center"
+          className="mx-auto aspect-video overflow-hidden rounded-3xl object-cover object-center"
           height="450"
           sizes="100vw"
           src={'/images/hero.jpg'}

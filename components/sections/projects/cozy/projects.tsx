@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ProjectCard from './project-card';
 
 import Reveal from '@/components/reveal';
@@ -12,6 +12,15 @@ import { cn } from '@/lib/utils';
 
 function Projects() {
   const [filter, setFilter] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Extract unique categories from projects
   const allCategories = Array.from(
@@ -22,6 +31,17 @@ function Projects() {
   const filteredProjects = filter
     ? projects.filter((project) => project.category === filter)
     : projects;
+
+  const limit = isMobile ? 3 : 6;
+  const displayedProjects = showAll
+    ? filteredProjects
+    : filteredProjects.slice(0, limit);
+  const hasMore = filteredProjects.length > limit;
+
+  const handleFilterChange = (category: string | null) => {
+    setFilter(category);
+    setShowAll(false);
+  };
 
   return (
     <MotionWrap className="w-full py-24 lg:py-32" id="projects">
@@ -48,7 +68,7 @@ function Projects() {
         {allCategories.length > 0 && (
           <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <Button
-              onClick={() => setFilter(null)}
+              onClick={() => handleFilterChange(null)}
               variant={filter === null ? 'default' : 'outline'}
               className="rounded-full"
               size="sm"
@@ -58,7 +78,7 @@ function Projects() {
             {allCategories.map((category) => (
               <Button
                 key={category}
-                onClick={() => setFilter(category)}
+                onClick={() => handleFilterChange(category)}
                 variant={filter === category ? 'default' : 'outline'}
                 className="rounded-full"
                 size="sm"
@@ -75,12 +95,20 @@ function Projects() {
             'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
           )}
         >
-          {filteredProjects.map((project, index) => (
+          {displayedProjects.map((project, index) => (
             <Reveal key={index}>
               <ProjectCard {...project} />
             </Reveal>
           ))}
         </div>
+
+        {hasMore && !showAll && (
+          <div className="mt-8 flex justify-center">
+            <Button onClick={() => setShowAll(true)} variant="outline">
+              Show More
+            </Button>
+          </div>
+        )}
 
         {filteredProjects.length === 0 && (
           <div className="flex h-40 w-full flex-col items-center justify-center">
@@ -88,7 +116,7 @@ function Projects() {
               No projects found in this category
             </p>
             <Button
-              onClick={() => setFilter(null)}
+              onClick={() => handleFilterChange(null)}
               variant="link"
               className="mt-2"
             >

@@ -30,7 +30,11 @@ function Skills() {
           </p>
         </div>
         <div className="mt-6">
-          <Accordion type="single" collapsible className="w-full space-y-4">
+          <Accordion
+            type="single"
+            collapsible
+            className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {skills.map((skill, index) => (
               <SkillCard
                 key={index}

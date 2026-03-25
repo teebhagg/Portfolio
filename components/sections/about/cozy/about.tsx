@@ -31,10 +31,14 @@ function About() {
         </div>
         <div className="space-y-4">
           <p className="mt-6 max-w-[700px] text-gray-500 dark:text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-            I am a dedicated Software Engineer with a passion for crafting
-            elegant and efficient web and mobile applications. With experience
-            in a diverse range of technologies and frameworks, I am eager to
-            contribute to innovative projects and embrace new challenges.
+            I am a Software Engineer with 3+ years building and scaling
+            production fintech and SaaS products across web and mobile. I
+            specialize in TypeScript, React/Next.js, Node.js/NestJS, Flutter,
+            and React Native, delivering features end-to-end from system design
+            and data modeling through testing, CI/CD, and observability. I have
+            a proven track record improving reliability, automating manual
+            workflows, and leading small cross-functional teams in Agile,
+            remote, fast-paced startup environments.
           </p>
           <Button asChild>
             <Link

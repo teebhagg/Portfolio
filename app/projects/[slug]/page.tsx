@@ -93,7 +93,7 @@ const ProjectPage = (props: ProjectPageProps) => {
     <div className="container mx-auto px-4 pb-20 md:px-6">
       <Header metadata={metadata} />
 
-      <div className="relative mt-10 overflow-hidden rounded-xl">
+      <div className="relative mt-10 overflow-hidden rounded-3xl">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/20 to-transparent opacity-50" />
         <Image
           src={`/images/projects/${slug}/cover.jpg`}

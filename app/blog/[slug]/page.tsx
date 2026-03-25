@@ -121,7 +121,7 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
       <div className="container mx-auto px-4 md:px-6">
         {post.thumbnail && (
-          <div className="mx-auto mb-10 max-w-5xl overflow-hidden rounded-xl border border-border/40">
+          <div className="mx-auto mb-10 max-w-5xl overflow-hidden rounded-3xl border border-border/40">
             {/* Keep header image visible at top like reference */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

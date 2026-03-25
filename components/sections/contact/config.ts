@@ -1,7 +1,7 @@
 import { Contact } from '@/types/contact';
 
 const contact: Contact = {
-  email: 'khalijonez777@gmail.com',
+  email: 'mr.joshua.ansah@gmail.com',
   socials: {
     github: 'https://github.com/teebhagg',
     linkedin: 'https://www.linkedin.com/in/joshua-ansah-b0a15a230/'

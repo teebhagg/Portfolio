@@ -2,6 +2,16 @@ import { Project } from '@/types/project';
 
 const projects: Project[] = [
   {
+    name: 'CediWise',
+    slug: 'cedi_wise',
+    description:
+      'Smart budgeting tracking and financial literacy mobile app for Ghanaian users. Features income/ expense tracking, savings goals, and financial tips. Cross-platform (Android & iOS).',
+    thumbnail: '/images/projects/cediwise/banner.png',
+    category: 'Mobile App',
+    tags: ['React Native', 'Expo', 'TypeScript', 'Supabase'],
+    liveUrl: 'https://cediwise.app'
+  },
+  {
     name: 'GhanaAPI',
     slug: 'ghana_api',
     description:
@@ -65,40 +75,40 @@ const projects: Project[] = [
     tags: ['Flutter', 'Firebase', 'Google Maps API'],
     liveUrl:
       'https://play.google.com/store/apps/details?id=org.fcghana.green_ghana&hl=en'
-  },
-  {
-    name: 'Bhagg Bloggs',
-    slug: 'bhagg_bloggs',
-    description:
-      'A blogging platform where users can share their thoughts and ideas about anything. The platform allows users to create, read, and like posts.',
-    thumbnail: '/images/projects/bhagg_bloggs/cover.jpg',
-    category: 'Web Development',
-    tags: ['React', 'Node.js', 'MongoDB', 'Express.js'],
-    githubUrl: 'https://github.com/teebhagg/bhagg-bloggs',
-    liveUrl: 'https://bhagg-bloggs-frontend.vercel.app/'
-  },
-  {
-    name: 'Movie Catalogue',
-    slug: 'movie_catalogue',
-    description:
-      'A movie catalogue website that provides information about movies, actors, and directors. The website allows users to search for movies by title, actor, or director.',
-    thumbnail: '/images/projects/movie_catalogue/cover.jpg',
-    category: 'Web Development',
-    tags: ['React', 'TMDB API', 'CSS3'],
-    githubUrl: 'https://github.com/teebhagg/movie-website',
-    liveUrl: 'https://movie-website-teebhagg.vercel.app/'
-  },
-  {
-    name: 'UZI-Express',
-    slug: 'uzi_express',
-    description:
-      'An e-commerce platform where users can buy and sell. The platform helps promote a marketplace for eco-friendly products.',
-    thumbnail: '/images/projects/uzi_express/cover.jpg',
-    category: 'E-Commerce',
-    tags: ['Next.js', 'MongoDB', 'TailwindCSS'],
-    githubUrl: 'https://github.com/teebhagg/uzi-express',
-    liveUrl: 'https://uzi-express.vercel.app'
   }
+  // {
+  //   name: 'Bhagg Bloggs',
+  //   slug: 'bhagg_bloggs',
+  //   description:
+  //     'A blogging platform where users can share their thoughts and ideas about anything. The platform allows users to create, read, and like posts.',
+  //   thumbnail: '/images/projects/bhagg_bloggs/cover.jpg',
+  //   category: 'Web Development',
+  //   tags: ['React', 'Node.js', 'MongoDB', 'Express.js'],
+  //   githubUrl: 'https://github.com/teebhagg/bhagg-bloggs',
+  //   liveUrl: 'https://bhagg-bloggs-frontend.vercel.app/'
+  // },
+  // {
+  //   name: 'Movie Catalogue',
+  //   slug: 'movie_catalogue',
+  //   description:
+  //     'A movie catalogue website that provides information about movies, actors, and directors. The website allows users to search for movies by title, actor, or director.',
+  //   thumbnail: '/images/projects/movie_catalogue/cover.jpg',
+  //   category: 'Web Development',
+  //   tags: ['React', 'TMDB API', 'CSS3'],
+  //   githubUrl: 'https://github.com/teebhagg/movie-website',
+  //   liveUrl: 'https://movie-website-teebhagg.vercel.app/'
+  // },
+  // {
+  //   name: 'UZI-Express',
+  //   slug: 'uzi_express',
+  //   description:
+  //     'An e-commerce platform where users can buy and sell. The platform helps promote a marketplace for eco-friendly products.',
+  //   thumbnail: '/images/projects/uzi_express/cover.jpg',
+  //   category: 'E-Commerce',
+  //   tags: ['Next.js', 'MongoDB', 'TailwindCSS'],
+  //   githubUrl: 'https://github.com/teebhagg/uzi-express',
+  //   liveUrl: 'https://uzi-express.vercel.app'
+  // }
 ];
 
 export { projects };
