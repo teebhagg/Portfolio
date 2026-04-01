@@ -6,7 +6,7 @@ const projects: Project[] = [
     slug: 'cedi_wise',
     description:
       'Smart budgeting tracking and financial literacy mobile app for Ghanaian users. Features income/ expense tracking, savings goals, and financial tips. Cross-platform (Android & iOS).',
-    thumbnail: '/images/projects/cediwise/banner.png',
+    thumbnail: 'https://www.cediwise.app/banner.webp',
     category: 'Mobile App',
     tags: ['React Native', 'Expo', 'TypeScript', 'Supabase'],
     liveUrl: 'https://cediwise.app'
