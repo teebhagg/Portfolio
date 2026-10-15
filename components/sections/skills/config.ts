@@ -1,5 +1,6 @@
 import { Skill } from '@/types/skill';
 import {
+  Bot,
   Code2,
   CodeIcon,
   Computer,
@@ -21,7 +22,7 @@ const skills: Skill[] = [
   {
     name: 'Frontend Development',
     Icon: Globe,
-    description: `Expertise in creating responsive, interactive, and user-friendly interfaces using modern frameworks and libraries:\n\n - React.js\n - Next.js\n - TailwindCSS\n - Material-UI\n - Bootstrap`
+    description: `Expertise in creating responsive, interactive, and user-friendly interfaces using modern frameworks and libraries:\n\n - React.js\n - Next.js\n - Tailwind CSS\n - Material-UI\n - Bootstrap`
   },
   {
     name: 'Backend Development',
@@ -31,7 +32,7 @@ const skills: Skill[] = [
   {
     name: 'Mobile Development',
     Icon: SmartphoneIcon,
-    description: `Skilled in developing cross-platform mobile applications with a focus on performance and user experience:\n\n - Flutter`
+    description: `Skilled in developing cross-platform mobile applications with a focus on performance and user experience:\n\n - Flutter\n - React Native\n - Expo`
   },
   {
     name: 'Database Management',
@@ -41,7 +42,12 @@ const skills: Skill[] = [
   {
     name: 'Tools & Platforms',
     Icon: Settings,
-    description: `Proficient with industry-standard tools and platforms that enhance development workflow and collaboration:\n\n - Git\n - GitHub\n - Notion\n - Figma\n - Docker\n - CI/CD`
+    description: `Proficient with industry-standard tools and platforms that enhance development workflow and collaboration:\n\n - Git\n - GitHub\n - Notion\n - Figma\n - Docker\n - CI/CD\n - Redux`
+  },
+  {
+    name: 'AI & Developer Tools',
+    Icon: Bot,
+    description: `AI and developer tools used for feature prototyping and refactoring:\n\n - Cursor\n - Codex\n - LLM-assisted development`
   },
   {
     name: 'Methodologies',

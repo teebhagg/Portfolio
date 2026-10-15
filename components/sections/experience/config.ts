@@ -2,27 +2,33 @@ import { Experience } from '@/types/experience';
 
 const experiences: Experience[] = [
   {
-    name: 'Full Stack Engineer',
-    duration: 'Oct 2024 - Present',
+    name: 'Freelance Software Engineer (Contract)',
+    duration: 'Aug 2026 - Present',
+    company: 'Chale Lets Links Up',
+    description: `- Built and launched responsive production websites for Chale Link Up and Bomuara using React.\n- Developed Bomuara's cross-platform iOS and Android application using React Native and Expo.\n- Implemented authentication, messaging, payment, notification, and analytics flows in the mobile apps.`
+  },
+  {
+    name: 'Full-Stack Engineer',
+    duration: 'Oct 2024 - Jul 2026',
     company: 'Fluid Finance Technologies',
-    description: `- Engineered and launched 5+ critical features for customer-facing fintech web apps using Flutter, TypeScript, NestJS, and PostgreSQL.\n- Reduced production incidents by 30% by architecting a new data sanitation strategy and resolving over 50 critical bugs improving application stability.\n- Designed and implemented an internal admin dashboard automating major manual workflows, saving the team 15+ hours per month.\n- Overhauled the CI/ CD pipeline using GitHub Actions, reducing failed deployments and accelerating release cadence.\n- Collaborate with product managers and designers in Agile/ Scrum sprints, translating requirements into scalable solutions via code review and Git-based workflows.`
+    description: `- Engineered and launched 5+ critical features for customer-facing fintech web apps using Flutter, React, TypeScript, Node.js, and PostgreSQL.\n- Reduced production incidents by 30% by introducing a data sanitation strategy and resolving 50+ critical bugs.\n- Designed and implemented an internal admin dashboard automating major manual workflows, saving the team 10+ hours per month.\n- Improved the GitHub Actions CI/CD pipeline, reducing failed deployments and speeding up releases.\n- Collaborated with product managers and designers in Agile sprints to translate requirements into features, participate in code reviews, and deliver work through Git-based workflows.\n- Utilized AI-assisted development tools as part of the daily workflow, while enforcing code review and team standards.`
   },
   {
     name: 'Lead Software Engineer (Contract)',
     duration: 'Mar 2025 - Sep 2025',
     company: 'Verified Global E-Transport',
-    description: `- Led a 3-member engineering team delivering logistics and transport management solutions, using React, Node.js/ExpressJS, TypeScript, and PostgreSQL.\n- Architected a scalable microservices backend for core services (bookings, routing, user management), that maintained a 90% uptime.\n- Introduced Agile practices and managed sprint planning in Notion, improving the team's sprint completion rate by 25% and increasing delivery predictability for stakeholders.\n- Established new coding standards and a mandatory code review process that decreased the bug rate in new features by 40% in the first three months.`
+    description: `- Led a three-member engineering team delivering logistics and transport management solutions, using Flutter, React, Node.js/Express.js, TypeScript, and PostgreSQL.\n- Designed backend services for bookings, routing, and user management using Node.js, Express, TypeScript, and PostgreSQL.\n- Introduced Agile practices and managed sprint planning in Notion, improving the team's sprint completion rate by 25% and increasing delivery predictability for stakeholders.\n- Established new coding standards and a mandatory code review process that decreased the bug rate in new features by 40% in the first three months.`
   },
   {
     name: 'Software Developer',
     duration: 'Mar 2023 - Sep 2024',
     company: 'Seymo',
-    description: `- Engineered the platform's core modules including attendance, fee tracking, and push notifications which empowered over 1,000 daily users to manage school operations digitally.\n- Owned the development of key mobile features in Flutter, delivering a consistent and performant experience for users on both Android and iOS.\n- Partnered with the design team to build a shared component library that unified our UI and sped up our development cycle, allowing us to ship new features ~20% faster.`
+    description: `- Built attendance, fee tracking, and push notification modules for Seymo School, a product used by 1,000+ users.\n- Owned the development of key mobile features in Flutter, delivering a consistent and performant experience for users on both Android and iOS.\n- Partnered with the design team to build a shared component library that unified our UI and sped up our development cycle, allowing us to ship new features approximately 20% faster.`
   },
   {
-    name: 'Full Stack Developer',
+    name: 'Full-Stack Developer',
     duration: 'Feb 2023 - Sep 2024',
-    company: 'Freelance',
+    company: 'Freelance (concurrent)',
     description: `- Partnered directly with clients to build and launch custom web applications, handling the full lifecycle from initial design to deployment and maintenance.\n- Launched the Green Ghana mobile app on both iOS and Android, collaborating with another developer to deliver a user-friendly Flutter application for a key government initiative.\n- Developed the Moyosore blogging and audio platform, implementing the Sanity CMS backend that cut the client's content publishing time by half.`
   },
   {
@@ -35,7 +41,7 @@ const experiences: Experience[] = [
     name: 'Flutter Developer',
     duration: 'Sep 2021 - Aug 2022',
     company: 'Ghana Tech Lab',
-    description: `- Played a key role in developing 'The Mechanic,' a service marketplace app, where I built the end-to-end user booking and service feedback features in Flutter.\n- Worked closely with designers to transform Figma mockups into interactive Flutter prototypes, allowing our team to rapidly validate new concepts with stakeholders.\n- Gained strong foundational web skills by helping build and ship several full-stack projects using HTML, CSS, JavaScript, and collaborative Git workflows.`
+    description: `- Played a key role in developing The Mechanic, a service marketplace app, where I built the end-to-end user booking and service feedback features in Flutter.\n- Worked closely with designers to transform Figma mockups into interactive Flutter prototypes, allowing our team to rapidly validate new concepts with stakeholders.\n- Gained strong foundational web skills by helping build and ship several full-stack projects using HTML, CSS, JavaScript, and collaborative Git workflows.`
   }
 ];
 
