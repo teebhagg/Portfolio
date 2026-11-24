@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 import Link from 'next/link';
+import ScrollWordReveal from '@/components/scroll-word-reveal';
 
 const animation = {
   hide: {
@@ -27,8 +28,9 @@ type ProjectMetadata = {
   name: string;
   description: string;
   website: string;
-  github: string;
-  techstack: Array<{ label: string }>;
+  websiteLabel?: string;
+  github?: string;
+  techstack?: Array<{ label: string }>;
   selected: boolean;
   slug: string;
   date?: string;
@@ -41,7 +43,15 @@ type HeaderProps = {
 
 const Header = (props: HeaderProps) => {
   const {
-    metadata: { name, description, website, github, date, category }
+    metadata: {
+      name,
+      description,
+      website,
+      websiteLabel,
+      github,
+      date,
+      category
+    }
   } = props;
 
   return (
@@ -52,11 +62,11 @@ const Header = (props: HeaderProps) => {
         transition={{ duration: 0.5 }}
       >
         <Link
-          href="/projects"
+          href="/#projects"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Projects
+          <ScrollWordReveal>Back to Projects</ScrollWordReveal>
         </Link>
       </motion.div>
 
@@ -68,18 +78,22 @@ const Header = (props: HeaderProps) => {
       >
         {category && (
           <span className="inline-block rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-            {category}
+            <ScrollWordReveal>{category}</ScrollWordReveal>
           </span>
         )}
-        <h1 className="bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-4xl font-bold leading-tight tracking-tighter text-transparent sm:text-5xl md:text-6xl">
-          {name}
+        <h1 className="text-4xl font-bold leading-tight tracking-tighter text-foreground sm:text-5xl md:text-6xl">
+          <ScrollWordReveal>{name}</ScrollWordReveal>
         </h1>
-        <p className="max-w-3xl text-xl text-muted-foreground">{description}</p>
+        <p className="max-w-3xl text-xl text-muted-foreground">
+          <ScrollWordReveal>{description}</ScrollWordReveal>
+        </p>
 
         {date && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
-            <span>{date}</span>
+            <span>
+              <ScrollWordReveal>{date}</ScrollWordReveal>
+            </span>
           </div>
         )}
       </motion.div>
@@ -98,7 +112,9 @@ const Header = (props: HeaderProps) => {
             asChild
           >
             <Link href={website} target="_blank" rel="noopener noreferrer">
-              Visit Website
+              <ScrollWordReveal>
+                {websiteLabel ?? 'Visit Website'}
+              </ScrollWordReveal>
               <ArrowUpRightIcon className="h-4 w-4" />
             </Link>
           </Button>
@@ -112,7 +128,7 @@ const Header = (props: HeaderProps) => {
           >
             <Link href={github} target="_blank" rel="noopener noreferrer">
               <GithubIcon className="h-4 w-4" />
-              View Source Code
+              <ScrollWordReveal>View Source Code</ScrollWordReveal>
             </Link>
           </Button>
         )}

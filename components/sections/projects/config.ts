@@ -2,6 +2,18 @@ import { Project } from '@/types/project';
 
 const projects: Project[] = [
   {
+    name: 'DayKindle',
+    slug: 'daykindle',
+    description:
+      'A personal planner for goals, routines, and daily actions, designed to make room for changing plans.',
+    thumbnail: '/images/projects/daykindle/today-formal.png',
+    imagePosition: 'center top',
+    imageFit: 'contain',
+    category: 'Mobile App',
+    tags: ['Expo', 'React Native', 'TypeScript'],
+    liveUrl: 'https://daykindle.vercel.app'
+  },
+  {
     name: 'CediWise',
     slug: 'cedi_wise',
     description:
@@ -75,6 +87,16 @@ const projects: Project[] = [
     tags: ['Flutter', 'Firebase', 'Google Maps API'],
     liveUrl:
       'https://play.google.com/store/apps/details?id=org.fcghana.green_ghana&hl=en'
+  },
+  {
+    name: 'Atutor Global',
+    slug: 'atutorglobal',
+    description:
+      'An online learning platform connecting children, teens, and adults with African educators for one-to-one lessons and structured learning pathways.',
+    thumbnail: '/images/projects/atutorglobal/cover.webp',
+    category: 'Web Development',
+    tags: ['Online Learning', 'Education', 'EdTech'],
+    liveUrl: 'https://atutorglobal.com'
   }
   // {
   //   name: 'Bhagg Bloggs',

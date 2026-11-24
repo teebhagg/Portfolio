@@ -1,19 +1,32 @@
-.cursor {
-  opacity: 0;
-  z-index: 9999;
+.cursorContainer {
   position: fixed;
-  width: 15px;
-  height: 15px;
-  background-color: hsl(var(--foreground));
-  border-radius: 50%;
+  z-index: 9999;
   pointer-events: none;
-  transition: opacity 0.3s ease-in-out;
+  will-change: transform, opacity;
+}
 
-  &.hidden {
-    opacity: 0;
-  }
+.cursorShape {
+  display: block;
+  width: 28px;
+  height: 30px;
+  overflow: visible;
+}
 
-  &.visible {
-    opacity: 1;
+.cursorShadow {
+  fill: hsl(var(--scroll-foreground, var(--foreground)));
+  filter: drop-shadow(
+    0 1px 2px hsl(var(--scroll-foreground, var(--foreground)) / 0.2)
+  );
+}
+
+.cursorOutline {
+  fill: none;
+  stroke: hsl(var(--scroll-background, var(--background)));
+  stroke-width: 2.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursorContainer {
+    will-change: opacity;
   }
 }

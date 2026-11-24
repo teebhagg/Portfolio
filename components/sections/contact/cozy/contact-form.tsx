@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/form';
 import { useState } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import ScrollWordReveal from '@/components/scroll-word-reveal';
 
 // interface ValidationErrors {
 //   success: boolean;
@@ -66,20 +67,23 @@ export default function ContactForm() {
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      const res = await fetch('https://email-server-224m.onrender.com/api/send-email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-      })
+      const res = await fetch(
+        'https://email-server-224m.onrender.com/api/send-email',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        }
+      );
       var dataRes = await res.json();
       if (res.ok) {
         toast({
           variant: 'default',
           title: 'Success',
-          description: 'Your message has been sent successfully.',
-        })
+          description: 'Your message has been sent successfully.'
+        });
       } else {
         throw new Error(dataRes.message ?? 'Something went wrong.');
       }
@@ -87,8 +91,8 @@ export default function ContactForm() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: error.message ?? 'Something went wrong.',
-      })
+        description: error.message ?? 'Something went wrong.'
+      });
     }
     setLoading(false);
   };
@@ -103,7 +107,9 @@ export default function ContactForm() {
               name="fullName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel> Name </FormLabel>
+                  <FormLabel>
+                    <ScrollWordReveal>Name</ScrollWordReveal>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       id="fullName"
@@ -123,7 +129,9 @@ export default function ContactForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel> Email </FormLabel>
+                  <FormLabel>
+                    <ScrollWordReveal>Email</ScrollWordReveal>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       id="email"
@@ -143,12 +151,14 @@ export default function ContactForm() {
               name="message"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel> Subject </FormLabel>
+                  <FormLabel>
+                    <ScrollWordReveal>Message</ScrollWordReveal>
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       id="message"
                       placeholder={
-                        'Hello!\n\nThis is Jane Doe, from Example. Just wanted to say hi!'
+                        'Tell me a little about your project or question.'
                       }
                       disabled={loading}
                       {...field}
@@ -164,7 +174,7 @@ export default function ContactForm() {
               {loading && (
                 <LoaderCircleIcon className="mr-2 h-4 w-4 animate-spin" />
               )}
-              Submit
+              <ScrollWordReveal>Submit</ScrollWordReveal>
             </Button>
           </div>
         </form>

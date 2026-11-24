@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardFooter } from '@/components/ui/card';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 
 import { cn } from '@/lib/utils';
+import ScrollWordReveal from '@/components/scroll-word-reveal';
 
 interface ProjectCardProps extends Project {
   className?: string;
@@ -24,6 +25,8 @@ function ProjectCard({
   name,
   description,
   thumbnail,
+  imagePosition,
+  imageFit,
   slug,
   category,
   tags,
@@ -34,38 +37,44 @@ function ProjectCard({
   return (
     <Card
       className={cn(
-        'group relative flex h-full flex-col justify-between overflow-hidden rounded-lg border transition-all duration-300 hover:shadow-lg dark:hover:shadow-indigo-500/10',
+        'group relative grid h-[40rem] grid-rows-2 overflow-hidden rounded-md border bg-card transition-[transform,box-shadow,border-color] duration-300 ease-out focus-within:border-border focus-within:shadow-lg hover:-translate-y-1 hover:border-border hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0 xl:h-[36rem]',
         className
       )}
     >
-      <div className="relative overflow-hidden">
-        <div className="absolute left-0 top-0 z-10 m-3">
+      <div
+        className={cn(
+          'relative h-full min-h-0 overflow-hidden bg-muted',
+          imageFit === 'contain' && 'bg-stone-100 dark:bg-neutral-900'
+        )}
+      >
+        <div className="absolute inset-0 z-10 flex items-start justify-between p-4">
           {category && (
-            <span className="rounded-full bg-primary/90 px-3 py-1 text-xs font-medium text-primary-foreground backdrop-blur-sm">
-              {category}
+            <span className="rounded-full border border-white/20 bg-black/65 px-3.5 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur-md">
+              <ScrollWordReveal>{category}</ScrollWordReveal>
             </span>
           )}
         </div>
-        <CardContent className="z-[2] inline-block w-full overflow-hidden p-0">
-          <div className="relative h-56 w-full overflow-hidden sm:h-64 md:h-72">
-            <Image
-              src={thumbnail || '/placeholder.svg'}
-              alt={`Image of ${name}`}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-          </div>
-        </CardContent>
+        <Image
+          src={thumbnail || '/placeholder.svg'}
+          alt={`${name} project preview`}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className={cn(
+            imageFit === 'contain' ? 'object-contain' : 'object-cover',
+            'transition-transform duration-500 ease-out motion-reduce:scale-100 motion-reduce:transition-none [@media(hover:hover)]:group-hover:scale-[1.035]'
+          )}
+          style={{ objectPosition: imagePosition ?? 'center' }}
+        />
       </div>
 
-      <CardFooter className="flex flex-col items-start gap-4 p-5">
-        <div>
-          <h3 className="mb-2 text-xl font-bold tracking-tight transition-colors group-hover:text-primary">
-            {name}
+      <CardFooter className="flex h-full min-h-0 flex-col items-start gap-4 p-5 sm:p-6">
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-2 break-words text-xl font-bold tracking-tight transition-colors duration-200 group-hover:text-card-foreground/80">
+            <ScrollWordReveal>{name}</ScrollWordReveal>
           </h3>
-          <p className="text-sm text-muted-foreground">{description || ''}</p>
+          <p className="text-sm leading-relaxed text-card-foreground/80">
+            <ScrollWordReveal>{description || ''}</ScrollWordReveal>
+          </p>
         </div>
 
         {tags && tags.length > 0 && (
@@ -73,9 +82,9 @@ function ProjectCard({
             {tags.map((tag, i) => (
               <span
                 key={i}
-                className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground"
+                className="rounded-full border bg-muted px-3 py-1 text-xs font-medium text-card-foreground/80"
               >
-                {tag}
+                <ScrollWordReveal>{tag}</ScrollWordReveal>
               </span>
             ))}
           </div>
@@ -84,9 +93,9 @@ function ProjectCard({
         <div className="mt-auto flex w-full items-center justify-between">
           <Link
             href={'/projects/' + slug}
-            className="text-sm font-medium text-primary hover:underline"
+            className="text-sm font-medium text-card-foreground hover:underline"
           >
-            View Details
+            <ScrollWordReveal>View Details</ScrollWordReveal>
           </Link>
 
           <div className="flex gap-2">
@@ -101,6 +110,7 @@ function ProjectCard({
                       asChild
                     >
                       <a
+                        aria-label={`View ${name} source code on GitHub`}
                         href={githubUrl}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -127,6 +137,7 @@ function ProjectCard({
                       asChild
                     >
                       <a
+                        aria-label={`Visit the ${name} website`}
                         href={liveUrl}
                         target="_blank"
                         rel="noopener noreferrer"

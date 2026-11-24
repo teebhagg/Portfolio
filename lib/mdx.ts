@@ -6,14 +6,17 @@ export type ProjectMetadata = {
   name: string;
   description: string;
   website: string;
-  github: string;
-  techstack: Array<{ label: string }>;
+  websiteLabel?: string;
+  github?: string;
+  techstack?: Array<{ label: string }>;
   selected: boolean;
   slug: string;
   date?: string;
   category?: string;
   client?: string;
   gallery?: string[];
+  imagePosition?: string;
+  cover?: string;
 };
 
 export type BlogMetadata = {
@@ -25,6 +28,7 @@ export type BlogMetadata = {
   tags?: string[];
   featured?: boolean;
   thumbnail?: string;
+  imagePosition?: string;
   slug: string;
 };
 

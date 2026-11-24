@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useLenis } from '@/lib/lenis';
+import ScrollWordReveal from '@/components/scroll-word-reveal';
 
 export type TocItem = { depth: number; text: string; id: string };
 
@@ -30,6 +32,7 @@ function buildTree(items: TocItem[]): TocNode[] {
 
 export default function TOC({ items }: { items: TocItem[] }) {
   const tree = useMemo(() => buildTree(items), [items]);
+  const lenis = useLenis();
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
     tree.forEach((n) => (init[n.id] = true));
@@ -42,8 +45,12 @@ export default function TOC({ items }: { items: TocItem[] }) {
     e.preventDefault();
     const el = document.getElementById(id);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - 80; // header offset
-    window.scrollTo({ top: y, behavior: 'smooth' });
+    if (lenis) {
+      lenis.scrollTo(el, { offset: -80, duration: 1.25 });
+    } else {
+      const y = el.getBoundingClientRect().top + window.scrollY - 80;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
     history.replaceState(null, '', `#${id}`);
   };
 
@@ -52,7 +59,7 @@ export default function TOC({ items }: { items: TocItem[] }) {
     const isOpen = expanded[node.id];
     return (
       <li key={node.id} className="list-none">
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {hasChildren ? (
             <button
               type="button"
@@ -73,13 +80,13 @@ export default function TOC({ items }: { items: TocItem[] }) {
             href={`#${node.id}`}
             onClick={(e) => onScrollTo(e, node.id)}
             className={cn(
-              'transition-colors hover:text-foreground',
+              'min-w-0 flex-1 break-words transition-colors hover:text-foreground',
               node.depth <= 2
                 ? 'text-sm font-medium text-muted-foreground'
                 : 'ml-4 text-sm text-muted-foreground'
             )}
           >
-            {node.text}
+            <ScrollWordReveal>{node.text}</ScrollWordReveal>
           </Link>
         </div>
         {hasChildren && isOpen && (

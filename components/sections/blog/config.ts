@@ -7,7 +7,7 @@ const blogPosts: BlogPost[] = [
     description:
       'Discover how I built GhanaAPI - a unified platform providing developers with reliable access to essential Ghanaian services including digital addresses, exchange rates, transport data, and more.',
     thumbnail:
-      'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&h=400&fit=crop&crop=entropy&auto=format&q=80',
+      'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&h=400&fit=crop&auto=format&q=80',
     category: 'API Development',
     tags: ['API', 'Node.js', 'TypeScript', 'Ghana', 'REST', 'Digital Services'],
     date: 'September 19, 2025',

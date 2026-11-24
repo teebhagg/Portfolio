@@ -8,14 +8,8 @@ function Preloader() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      setTimeout(() => {
-        setIsLoading(false);
-        document.body.style.cursor = 'default';
-        // observe: this change has not been observed for errors.
-        // window.scrollTo(0, 0);
-      }, 2500);
-    })();
+    const timeout = window.setTimeout(() => setIsLoading(false), 2500);
+    return () => window.clearTimeout(timeout);
   }, []);
 
   return (

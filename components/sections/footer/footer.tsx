@@ -17,13 +17,15 @@ export default function Footer() {
   return (
     <div
       ref={containerRef}
-      className="relative h-[400px] md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
+      className="relative h-[460px] md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
+      data-section-color-anchor="deep-blue"
+      data-section-color-anchor-early="true"
       style={{
         clipPath: 'polygon(0% 0, 100% 0%, 100% 100%, 0 100%)'
       }}
     >
       <motion.div
-        className="fixed bottom-0 h-[400px] w-full md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
+        className="fixed bottom-0 h-[460px] w-full md:h-[500px] lg:h-[600px] xl:h-[700px] 2xl:h-[800px]"
         style={{ opacity }}
       >
         <Content />

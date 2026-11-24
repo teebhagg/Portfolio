@@ -1,147 +1,181 @@
 'use client';
+
 import {
   motion,
-  MotionValue,
-  SpringOptions,
   useMotionValue,
+  useReducedMotion,
   useSpring
 } from 'framer-motion';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './style.module.scss';
 
-interface MouseMoveEvent {
-  clientX: number;
-  clientY: number;
-}
+type Point = { x: number; y: number };
 
-interface Distance {
-  x: number;
-  y: number;
+const desktopPointerQuery = '(any-hover: hover) and (any-pointer: fine)';
+
+function CursorShape() {
+  return (
+    <svg
+      aria-hidden="true"
+      className={styles.cursorShape}
+      fill="none"
+      viewBox="0 0 50 54"
+    >
+      <path
+        className={styles.cursorShadow}
+        d="M42.68 41.15 27.51 6.8c-.78-1.77-3.3-1.77-4.12 0L7.6 41.15c-.84 1.83.93 3.74 2.81 3.05l13.97-5.15a2.2 2.2 0 0 1 1.57 0l13.87 5.15c1.87.69 3.68-1.22 2.87-3.05Z"
+      />
+      <path
+        className={styles.cursorOutline}
+        d="m43.71 40.69-15.17-34.35c-1.19-2.69-4.97-2.65-6.18-.02L6.57 40.68c-1.26 2.74 1.4 5.62 4.23 4.58l13.96-5.15a2.1 2.1 0 0 1 1.56 0l13.87 5.15c2.81 1.04 5.51-1.82 4.3-4.57Z"
+      />
+    </svg>
+  );
 }
 
 export default function Cursor() {
-  const [isPressed, setIsPressed] = useState<boolean>(false);
-  const cursor = useRef<HTMLDivElement>(null);
-  const cursorSize = isPressed ? 18 : 12;
+  const reduceMotion = useReducedMotion();
+  const [isEnabled, setIsEnabled] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const lastPosition = useRef<Point>({ x: 0, y: 0 });
+  const lastUpdateTime = useRef(0);
+  const previousAngle = useRef(0);
+  const accumulatedRotation = useRef(0);
+  const pendingPosition = useRef<Point | null>(null);
+  const animationFrame = useRef<number | null>(null);
+  const settleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const mouse: { x: MotionValue<number>; y: MotionValue<number> } = {
-    x: useMotionValue(0),
-    y: useMotionValue(0)
-  };
+  const springConfig = reduceMotion
+    ? { damping: 100, stiffness: 1000, mass: 0.5, restDelta: 0.001 }
+    : { damping: 45, stiffness: 1200, mass: 0.35, restDelta: 0.001 };
+  const pointerX = useMotionValue(0);
+  const pointerY = useMotionValue(0);
+  const cursorX = useSpring(pointerX, springConfig);
+  const cursorY = useSpring(pointerY, springConfig);
+  const rotation = useSpring(0, {
+    ...springConfig,
+    damping: 42,
+    stiffness: 500
+  });
+  const scale = useSpring(1, {
+    ...springConfig,
+    stiffness: 500,
+    damping: 35
+  });
 
-  const smoothOptions: SpringOptions = {
-    damping: 20,
-    stiffness: 300,
-    mass: 0.5
-  };
-  const smoothMouse = {
-    x: useSpring(mouse.x, smoothOptions),
-    y: useSpring(mouse.y, smoothOptions)
-  };
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(desktopPointerQuery);
+    const updateEnabled = () => {
+      setIsEnabled(mediaQuery.matches);
+      if (!mediaQuery.matches) setIsVisible(false);
+    };
 
-  const manageResize = useCallback(() => {
-    const isFinePointer = window.matchMedia('(pointer: fine)').matches;
-    if (!isFinePointer) {
-      setIsVisible(false);
-      return;
-    }
-  }, []);
-
-  const manageMouseMove = useCallback(
-    (e: MouseMoveEvent) => {
-      const isFinePointer = window.matchMedia('(pointer: fine)').matches;
-      if (!isFinePointer) {
-        setIsVisible(false);
-        return;
-      }
-      if (!isVisible) setIsVisible(true);
-
-      const { clientX, clientY } = e;
-      mouse.x.set(clientX - cursorSize / 2);
-      mouse.y.set(clientY - cursorSize / 2);
-    },
-    [isVisible, mouse.x, mouse.y, cursorSize]
-  );
-
-  const manageMouseLeave = useCallback(() => {
-    setIsVisible(false);
-  }, []);
-
-  const handleMouseDown = useCallback((e: MouseEvent) => {
-    // prevent right click to trigger pressed
-    if (e.button === 2) return;
-
-    setIsPressed(true);
-  }, []);
-
-  const handleMouseUp = useCallback(() => {
-    setIsPressed(false);
+    updateEnabled();
+    mediaQuery.addEventListener('change', updateEnabled);
+    return () => mediaQuery.removeEventListener('change', updateEnabled);
   }, []);
 
   useEffect(() => {
-    window.addEventListener('resize', manageResize);
+    if (!isEnabled) return;
 
-    document.body.addEventListener('mouseleave', manageMouseLeave, {
+    document.documentElement.classList.add('smooth-cursor-active');
+
+    const flushPointerMove = () => {
+      animationFrame.current = null;
+      const position = pendingPosition.current;
+      if (!position) return;
+
+      const now = performance.now();
+      pointerX.set(position.x);
+      pointerY.set(position.y);
+      if (lastUpdateTime.current === 0) {
+        lastUpdateTime.current = now;
+        lastPosition.current = position;
+        return;
+      }
+
+      const elapsed = now - lastUpdateTime.current;
+      const velocity =
+        elapsed > 0
+          ? {
+              x: (position.x - lastPosition.current.x) / elapsed,
+              y: (position.y - lastPosition.current.y) / elapsed
+            }
+          : { x: 0, y: 0 };
+      lastUpdateTime.current = now;
+      lastPosition.current = position;
+
+      const speed = Math.hypot(velocity.x, velocity.y);
+      if (!reduceMotion && speed > 0.1) {
+        const angle = (Math.atan2(velocity.y, velocity.x) * 180) / Math.PI + 90;
+        let angleDelta = angle - previousAngle.current;
+        if (angleDelta > 180) angleDelta -= 360;
+        if (angleDelta < -180) angleDelta += 360;
+        accumulatedRotation.current += angleDelta;
+        rotation.set(accumulatedRotation.current);
+        previousAngle.current = angle;
+
+        scale.set(0.96);
+        if (settleTimeout.current) clearTimeout(settleTimeout.current);
+        settleTimeout.current = setTimeout(() => scale.set(1), 150);
+      }
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      setIsVisible(true);
+      pendingPosition.current = { x: event.clientX, y: event.clientY };
+      if (animationFrame.current === null) {
+        animationFrame.current = window.requestAnimationFrame(flushPointerMove);
+      }
+    };
+
+    const handlePointerLeave = () => {
+      setIsVisible(false);
+      lastUpdateTime.current = 0;
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, {
       passive: true
     });
-    window.addEventListener('mousemove', manageMouseMove, {
-      passive: true
-    });
-    window.addEventListener('mousedown', handleMouseDown, {
-      passive: true
-    });
-    window.addEventListener('mouseup', handleMouseUp, {
-      passive: true
-    });
+    document.documentElement.addEventListener(
+      'pointerleave',
+      handlePointerLeave
+    );
 
     return () => {
-      window.removeEventListener('resize', manageResize);
-
-      window.removeEventListener('mouseleave', manageMouseLeave);
-      window.removeEventListener('mousemove', manageMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
+      document.documentElement.classList.remove('smooth-cursor-active');
+      window.removeEventListener('pointermove', handlePointerMove);
+      document.documentElement.removeEventListener(
+        'pointerleave',
+        handlePointerLeave
+      );
+      if (animationFrame.current !== null) {
+        window.cancelAnimationFrame(animationFrame.current);
+      }
+      if (settleTimeout.current) clearTimeout(settleTimeout.current);
     };
-  }, [
-    manageResize,
-    manageMouseLeave,
-    manageMouseMove,
-    handleMouseDown,
-    handleMouseUp
-  ]);
+  }, [isEnabled, pointerX, pointerY, reduceMotion, rotation, scale]);
 
-  const template = ({
-    rotate,
-    scaleX,
-    scaleY
-  }: {
-    rotate: number;
-    scaleX: number;
-    scaleY: number;
-  }) => {
-    return `rotate(${rotate}deg) scaleX(${scaleX}) scaleY(${scaleY})`;
-  };
+  if (!isEnabled) return null;
 
   return (
-    <div className={styles.cursorContainer}>
-      {/* TODO: Instead of setting a high x & y, use hidden and show the cursor when moved */}
-      {/* TODO: Hide the whole cursor and make this the way to use the cursor */}
-      <motion.div
-        transformTemplate={template}
-        style={{
-          left: smoothMouse.x,
-          top: smoothMouse.y,
-          scaleX: mouse.x,
-          scaleY: mouse.y
-        }}
-        animate={{
-          width: cursorSize,
-          height: cursorSize
-        }}
-        className={`${styles.cursor} ${isVisible ? styles.visible : styles.hidden}`}
-        ref={cursor}
-      ></motion.div>
-    </div>
+    <motion.div
+      aria-hidden="true"
+      animate={{ opacity: isVisible ? 1 : 0 }}
+      className={styles.cursorContainer}
+      initial={false}
+      style={{
+        left: reduceMotion ? pointerX : cursorX,
+        top: reduceMotion ? pointerY : cursorY,
+        translateX: '-50%',
+        translateY: '-50%',
+        rotate: reduceMotion ? 0 : rotation,
+        scale: reduceMotion ? 1 : scale
+      }}
+      transition={{ duration: 0.15 }}
+    >
+      <CursorShape />
+    </motion.div>
   );
 }

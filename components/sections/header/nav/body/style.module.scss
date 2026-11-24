@@ -7,12 +7,14 @@
     color: hsl(var(--foreground));
     text-decoration: none;
     text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 240ms ease-in-out;
   }
 
   p {
     margin: 0px;
     display: flex;
-    overflow: hidden;
+    overflow: visible;
     font-size: 32px;
     padding-right: 30px;
     padding-top: 10px;

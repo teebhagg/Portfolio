@@ -8,17 +8,17 @@ const links: Link[] = [
   },
   {
     title: 'About',
-    href: '#about',
+    href: '/#about',
     thumbnail: 'about.jpg'
   },
   {
     title: 'Projects',
-    href: '#projects',
+    href: '/#projects',
     thumbnail: 'projects.jpg'
   },
   {
     title: 'Skills',
-    href: '#skills',
+    href: '/#skills',
     thumbnail: 'skills.jpg'
   },
   {
@@ -27,13 +27,13 @@ const links: Link[] = [
     thumbnail: 'blog.jpg'
   },
   {
-    title: 'Testimonials',
-    href: '#testimonials',
-    thumbnail: 'testimonials.jpg'
+    title: 'Contact',
+    href: '/#contact',
+    thumbnail: 'contact.jpg'
   },
   {
-    title: 'Contact',
-    href: '#contact',
+    title: 'Feedback',
+    href: '/feedback',
     thumbnail: 'contact.jpg'
   }
 ];

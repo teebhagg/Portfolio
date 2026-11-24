@@ -8,7 +8,6 @@ import Footer from './footer/footer';
 import Hero from './hero/cozy/hero';
 import Projects from './projects/cozy/projects';
 import Skills from './skills/cozy/skills';
-import Testimonials from './testimonials/cozy/testimonials';
 
 export {
   About,
@@ -19,6 +18,5 @@ export {
   Header,
   Hero,
   Projects,
-  Skills,
-  Testimonials
+  Skills
 };

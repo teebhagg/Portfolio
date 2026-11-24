@@ -22,8 +22,13 @@ export const Reveal = ({ children, width = '100%' }: RevealProps) => {
   }, [isInView, mainControls]);
 
   return (
-    <div ref={ref} style={{ position: 'relative', width, overflow: 'hidden' }}>
+    <div
+      ref={ref}
+      className="h-full"
+      style={{ position: 'relative', width, overflow: 'hidden' }}
+    >
       <motion.div
+        className="h-full"
         variants={{
           hidden: { opacity: 0, y: 75 },
           visible: { opacity: 1, y: 0 }

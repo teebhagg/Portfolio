@@ -2,8 +2,8 @@ import type { FooterItem } from '@/types/footer';
 
 const footer: FooterItem[] = [
   {
-    title: 'Home',
-    href: '/'
+    title: 'Feedback',
+    href: '/feedback'
   }
 ];
 

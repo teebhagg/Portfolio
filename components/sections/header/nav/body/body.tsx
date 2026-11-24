@@ -27,7 +27,7 @@ export default function Body({
     word.split('').forEach((char, i) => {
       chars.push(
         <motion.span
-          custom={[i * 0.02, (word.length - i) * 0.01]}
+          custom={[i * 0.02, (word.length - i - 1) * 0.02]}
           variants={translate}
           initial="initial"
           animate="enter"

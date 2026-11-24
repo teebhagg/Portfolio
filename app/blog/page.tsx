@@ -1,6 +1,4 @@
-import Cursor from '@/components/cursor/cursor';
-import { Blog, Footer, Header } from '@/components/sections';
-import SmoothScroll from '@/components/smooth-scroll';
+import { Blog } from '@/components/sections';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -10,15 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function BlogPage() {
-  return (
-    <SmoothScroll>
-      <div className="flex min-h-[100dvh] flex-col">
-        <main className="mt-14 flex-1 md:mt-20">
-          <Blog />
-        </main>
-        <Footer />
-      </div>
-      <Cursor />
-    </SmoothScroll>
-  );
+  return <Blog />;
 }

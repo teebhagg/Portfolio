@@ -6,13 +6,13 @@ import {
   Header,
   Hero,
   Projects,
-  Skills,
-  Testimonials
+  Skills
 } from '@/components/sections';
 
 import Cursor from '@/components/cursor/cursor';
 import Preloader from '@/components/preloader/preloader';
 import SmoothScroll from '@/components/smooth-scroll';
+import SectionColorField from '@/components/section-color-field';
 
 export default function Home() {
   return (
@@ -20,13 +20,13 @@ export default function Home() {
       <Preloader />
       <div className="flex min-h-[100dvh] flex-col">
         <Header loader={true} />
-        <main className="flex-1">
+        <main className="scroll-color-main relative isolate flex-1">
+          <SectionColorField />
           <Hero />
           <About />
           <Skills />
           <Projects />
           <Experience />
-          <Testimonials />
           <Contact />
           <Footer />
         </main>

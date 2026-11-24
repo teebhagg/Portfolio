@@ -24,12 +24,14 @@ const Index: React.FC<IndexProps> = ({ setIsActive }) => {
   });
 
   return (
-    <motion.div
+    <motion.nav
       variants={height}
       initial="initial"
       animate="enter"
       exit="exit"
       className={styles.nav}
+      id="site-navigation"
+      aria-label="Site navigation"
     >
       <div className={styles.wrapper}>
         <div className={styles.container}>
@@ -46,11 +48,11 @@ const Index: React.FC<IndexProps> = ({ setIsActive }) => {
           isActive={selectedLink.isActive}
           alt={links[selectedLink.index].title}
         />
-        <div className="absolute bottom-0 right-0 z-50 mb-auto">
+        <div className="absolute bottom-0 right-0 mb-auto">
           <ModeToggle />
         </div>
       </div>
-    </motion.div>
+    </motion.nav>
   );
 };
 
