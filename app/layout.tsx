@@ -42,7 +42,13 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: meta.site.title,
-    description: meta.site.description
+    description: meta.site.description,
+    images: [
+      {
+        url: '/images/social-cover.png',
+        alt: 'Joshua Ansah, software engineer'
+      }
+    ]
   },
   openGraph: {
     url: meta.site.url,
@@ -50,7 +56,15 @@ export const metadata: Metadata = {
     title: meta.site.title,
     siteName: meta.site.title,
     description: meta.site.description,
-    locale: 'en_GH'
+    locale: 'en_GH',
+    images: [
+      {
+        url: '/images/social-cover.png',
+        width: 1200,
+        height: 630,
+        alt: 'Joshua Ansah, software engineer'
+      }
+    ]
   },
   icons: {
     icon: '/favicon/favicon.svg',

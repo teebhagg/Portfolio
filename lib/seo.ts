@@ -27,7 +27,12 @@ export function getSiteStructuredData() {
         url: siteUrl,
         jobTitle: metadata.author.label,
         description: metadata.site.description,
-        image: `${siteUrl}/images/hero-memoji.png`,
+        image: {
+          '@type': 'ImageObject',
+          url: `${siteUrl}/images/hero-memoji.png`,
+          width: 1254,
+          height: 1254
+        },
         email: `mailto:${contact.email}`,
         sameAs: Object.values(contact.socials),
         knowsAbout
