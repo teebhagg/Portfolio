@@ -30,7 +30,20 @@ function Hero() {
               </ScrollWordReveal>
             </h1>
             <p className="max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg md:text-xl">
-              <ScrollWordReveal>{hero.description}</ScrollWordReveal>
+              <ScrollWordReveal>
+                {hero.description.split(/(portfolio)/i).map((part, index) =>
+                  part.toLowerCase() === 'portfolio' ? (
+                    <strong
+                      className="font-bold uppercase italic"
+                      key={`hero-description-${index}`}
+                    >
+                      PORTFOLIO
+                    </strong>
+                  ) : (
+                    part
+                  )
+                )}
+              </ScrollWordReveal>
             </p>
           </div>
           <a

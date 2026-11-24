@@ -815,13 +815,13 @@ main > div:not(.section-color-field) {
   transform: translateX(0) scale(1);
 }
 
-.scroll-color-main [data-section-tone] svg.skill-reveal-logo {
+.scroll-color-main [data-section-tone] .skill-logo-frame {
   transition:
-    opacity 300ms ease-in-out,
-    transform 360ms ease-in-out,
     color 500ms ease-in-out,
-    fill 500ms ease-in-out,
-    stroke 500ms ease-in-out !important;
+    background-color 500ms ease-in-out,
+    border-color 500ms ease-in-out,
+    opacity 300ms ease-in-out,
+    transform 360ms ease-in-out !important;
 }
 
 @media (hover: none) {

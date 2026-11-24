@@ -23,7 +23,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
-import { cn, trimString } from '@/lib/utils';
+import { trimString } from '@/lib/utils';
 import { trimLen } from '@/components/sections/skills/config';
 import { Skill } from '@/types/skill';
 import remarkGfm from 'remark-gfm';
@@ -69,15 +69,6 @@ const supportingSkillIcons: Record<string, LucideIcon> = {
   Teamwork: Handshake,
   'Problem-Solving': Lightbulb
 };
-
-const monochromeLogos = new Set([
-  'cursor',
-  'express',
-  'nextdotjs',
-  'notion',
-  'github',
-  'expo'
-]);
 
 function getPlainText(node: ReactNode): string {
   if (typeof node === 'string' || typeof node === 'number') {
@@ -146,25 +137,25 @@ function SkillCard({
                       return (
                         <li className="skill-reveal-item">
                           {logo ? (
-                            <Image
-                              src={`/images/skill-logos/${logo}.svg`}
-                              alt=""
-                              aria-hidden="true"
-                              width={18}
-                              height={18}
-                              className={cn(
-                                'skill-reveal-logo',
-                                monochromeLogos.has(logo) &&
-                                  'dark:brightness-0 dark:invert'
-                              )}
-                            />
+                            <span className="skill-reveal-logo skill-logo-frame flex size-7 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background">
+                              <Image
+                                src={`/images/skill-logos/${logo}.svg`}
+                                alt=""
+                                aria-hidden="true"
+                                width={18}
+                                height={18}
+                                className="skill-reveal-image dark:brightness-0 dark:invert"
+                              />
+                            </span>
                           ) : SupportingIcon ? (
-                            <SupportingIcon
-                              aria-hidden="true"
-                              className="skill-reveal-logo"
-                              size={18}
-                              strokeWidth={1.8}
-                            />
+                            <span className="skill-reveal-logo skill-logo-frame flex size-7 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background">
+                              <SupportingIcon
+                                aria-hidden="true"
+                                className="size-[18px] text-foreground"
+                                size={18}
+                                strokeWidth={1.8}
+                              />
+                            </span>
                           ) : null}
                           <ScrollWordReveal>{children}</ScrollWordReveal>
                         </li>
