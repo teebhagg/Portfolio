@@ -1,6 +1,8 @@
 import type { FooterItem } from '@/types/footer';
 
 const footer: FooterItem[] = [
+  { title: 'Contact', href: '/contact' },
+  { title: 'Privacy', href: '/privacy' },
   {
     title: 'Feedback',
     href: '/feedback'

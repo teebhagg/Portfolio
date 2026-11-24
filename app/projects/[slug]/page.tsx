@@ -9,6 +9,8 @@ import { getAllPages, getPage, type ProjectMetadata } from '@/lib/mdx';
 import Header from './header';
 import { Footer } from '@/components/sections';
 import ScrollWordReveal from '@/components/scroll-word-reveal';
+import { StructuredData } from '@/components/structured-data';
+import { personId, siteUrl } from '@/lib/seo';
 
 type ProjectPageProps = {
   params: {
@@ -46,11 +48,13 @@ export const generateMetadata = async (
     title: name,
     description: description,
     alternates: {
-      canonical: `/projects/${params.slug}`
+      canonical: `/projects/${params.slug}`,
+      types: { 'text/markdown': `/ai/projects/${params.slug}` }
     },
     openGraph: {
       ...previousOpenGraph,
       url: `/projects/${params.slug}`,
+      type: 'website',
       title: name,
       description: description,
       images: [
@@ -58,7 +62,7 @@ export const generateMetadata = async (
           url: `/images/projects/${params.slug}/${cover}`,
           width: cover.endsWith('.png') ? 1419 : 1280,
           height: cover.endsWith('.png') ? 2796 : 832,
-          alt: description,
+          alt: name,
           type: 'image/png'
         }
       ]
@@ -72,7 +76,7 @@ export const generateMetadata = async (
           url: `/images/projects/${params.slug}/${cover}`,
           width: cover.endsWith('.png') ? 1419 : 1280,
           height: cover.endsWith('.png') ? 2796 : 832,
-          alt: description
+          alt: name
         }
       ]
     }
@@ -91,9 +95,26 @@ const ProjectPage = (props: ProjectPageProps) => {
   }
 
   const { metadata, content } = project;
+  const canonicalUrl = `${siteUrl}/projects/${slug}`;
 
   return (
     <>
+      <StructuredData
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'CreativeWork',
+          '@id': `${canonicalUrl}#project`,
+          mainEntityOfPage: canonicalUrl,
+          name: metadata.name,
+          description: metadata.description,
+          creator: { '@id': personId },
+          url: canonicalUrl,
+          sameAs: [metadata.website, metadata.github].filter(Boolean),
+          image: `${siteUrl}/images/projects/${slug}/${metadata.cover ?? 'cover.jpg'}`,
+          keywords: metadata.techstack?.map((technology) => technology.label),
+          genre: metadata.category
+        }}
+      />
       <div data-section-tone="sky">
         <div className="container mx-auto px-4 pb-20 md:px-6">
           <Header metadata={metadata} />

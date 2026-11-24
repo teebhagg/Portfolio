@@ -6,7 +6,8 @@ import ScrollWordReveal from '@/components/scroll-word-reveal';
 
 export const metadata: Metadata = {
   title: 'Feedback',
-  description: 'Share feedback about Joshua Ansah’s portfolio.'
+  description: 'Share feedback about Joshua Ansah’s portfolio.',
+  robots: { index: false, follow: true }
 };
 
 export default function FeedbackPage() {

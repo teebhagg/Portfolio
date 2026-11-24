@@ -7,31 +7,10 @@ const metadata: Metadata = {
     label: 'Software Engineer'
   },
   site: {
-    title: 'Joshua Ansah - Portfolio Website',
-    description: 'Portfolio of software engineer Joshua Ansah.',
-    ogImage: '/images/og.png',
-    url: 'https://josh-ansah.vercel.app',
-    keywords: [
-      'web design',
-      'web development',
-      'mobile development',
-      'software development',
-      'software engineer',
-      'flutter',
-      'react.js',
-      'next.js',
-      'typescript',
-      'tailwindcss',
-      'javascript',
-      'express.js',
-      'mongodb',
-      'node.js',
-      'postgresql',
-      'portfolio',
-      'Joshua Ansah',
-      'joshuaansah',
-      'Joshua Ansah portfolio',
-    ],
+    title: 'Joshua Ansah — Software Engineer',
+    description:
+      'Joshua Ansah is a software engineer with 3+ years of experience building web and mobile products across fintech, SaaS, APIs, and cross-platform applications.',
+    url: 'https://joshua-ansah.vercel.app',
     language: 'en',
     charset: 'UTF-8'
   }

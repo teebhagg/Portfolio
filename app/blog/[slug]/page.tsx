@@ -1,5 +1,6 @@
 import TOC, { type TocItem } from '@/components/blog/toc';
 import { MemoizedReactMarkdown } from '@/components/markdown';
+import { StructuredData } from '@/components/structured-data';
 import ScrollWordReveal from '@/components/scroll-word-reveal';
 import { blogPosts } from '@/components/sections/blog/config';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { isValidElement, type ReactNode } from 'react';
+import { personId, siteUrl } from '@/lib/seo';
 const ScrollToTop = dynamic(() => import('@/components/blog/scroll-to-top'), {
   ssr: false
 });
@@ -18,6 +20,11 @@ type BlogPostPageProps = {
   params: {
     slug: string;
   };
+};
+
+const toIsoDate = (date: string) => {
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed.toISOString();
 };
 
 export const generateStaticParams = (): Array<BlogPostPageProps['params']> => {
@@ -39,13 +46,19 @@ export async function generateMetadata(
   }
 
   return {
-    title: `${post.title} | Blog`,
+    title: post.title,
     description: post.description,
+    alternates: {
+      canonical: `/blog/${params.slug}`,
+      types: { 'text/markdown': `/ai/articles/${params.slug}` }
+    },
     openGraph: {
+      ...((await parent)?.openGraph ?? {}),
+      url: `/blog/${params.slug}`,
       title: post.title,
       description: post.description,
       type: 'article',
-      publishedTime: post.date,
+      publishedTime: toIsoDate(post.date),
       authors: [post.author],
       images: post.thumbnail
         ? [
@@ -57,6 +70,12 @@ export async function generateMetadata(
             }
           ]
         : undefined
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+      images: post.thumbnail ? [post.thumbnail] : undefined
     }
   };
 }
@@ -126,6 +145,8 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
   };
 
   const tocItems: TocItem[] = content ? extractHeadings(content) : [];
+  const publishedAt = toIsoDate(metadata?.date || post.date);
+  const canonicalUrl = `${siteUrl}/blog/${post.slug}`;
   const headingCounts: Record<string, number> = {};
   const getHeadingId = (children: ReactNode) => {
     const baseId = slugify(textContent(children));
@@ -136,6 +157,22 @@ export default function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <>
+      <StructuredData
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          '@id': `${canonicalUrl}#article`,
+          mainEntityOfPage: canonicalUrl,
+          headline: metadata?.title || post.title,
+          description: metadata?.description || post.description,
+          image: post.thumbnail,
+          datePublished: publishedAt,
+          author: { '@id': personId },
+          publisher: { '@id': personId },
+          articleSection: post.category,
+          keywords: post.tags
+        }}
+      />
       <div
         className="relative"
         data-section-tone="lavender"

@@ -24,9 +24,9 @@ const Copyright = () => {
 
   return (
     <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-end md:gap-4">
-      <h1 className="mt-8 whitespace-nowrap text-[16vw] leading-[0.8] sm:text-[18vw] md:mt-10 md:text-[16vw] lg:text-[18vw] xl:text-[20vw] 2xl:text-[22vw]">
+      <p className="mt-8 whitespace-nowrap text-[16vw] leading-[0.8] sm:text-[18vw] md:mt-10 md:text-[16vw] lg:text-[18vw] xl:text-[20vw] 2xl:text-[22vw]">
         <ScrollWordReveal>Portfolio</ScrollWordReveal>
-      </h1>
+      </p>
       <p className="mt-4 text-xs sm:mt-0 sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl">
         <ScrollWordReveal>© {yearDisplay}</ScrollWordReveal>
         <br />

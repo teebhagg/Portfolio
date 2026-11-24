@@ -4,6 +4,8 @@ import '@/styles/globals.css';
 
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { StructuredData } from '@/components/structured-data';
+import { getSiteStructuredData } from '@/lib/seo';
 
 import { metadata as meta } from './config';
 
@@ -16,6 +18,16 @@ export const metadata: Metadata = {
     template: `%s | ${meta.site.title}`
   },
   description: meta.site.description,
+  alternates: {
+    canonical: '/',
+    types: {
+      'text/plain': '/llms.txt',
+      'text/markdown': '/llms-full.txt'
+    }
+  },
+  authors: [{ name: meta.author.name, url: 'https://github.com/teebhagg' }],
+  creator: meta.author.name,
+  publisher: meta.author.name,
   robots: {
     index: true,
     follow: true,
@@ -29,39 +41,16 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: meta.author.name, // or meta.site.title
-    description: meta.site.description,
-    // site: '@username',
-    // siteId: 'id',
-    // creator: '@username',
-    // creatorId: 'id',
-    images: [
-      {
-        url: '/images/og.png',
-        width: 1200,
-        height: 630,
-        alt: meta.site.description
-      }
-    ]
+    title: meta.site.title,
+    description: meta.site.description
   },
-  keywords: meta.site.keywords,
-  creator: meta.author.username,
   openGraph: {
     url: meta.site.url,
     type: 'website',
     title: meta.site.title,
     siteName: meta.site.title,
     description: meta.site.description,
-    locale: 'en-US',
-    images: [
-      {
-        url: meta.site.ogImage,
-        width: 1200,
-        height: 630,
-        alt: meta.site.description,
-        type: 'image/png'
-      }
-    ]
+    locale: 'en_GH'
   },
   icons: {
     icon: '/favicon/favicon.svg',
@@ -97,7 +86,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="describedby" href="/llms.txt" />
+        <link
+          rel="alternate"
+          type="text/markdown"
+          href="/llms-full.txt"
+          title="Full Markdown reference for AI agents"
+        />
+      </head>
       <body className={inter.className}>
+        <StructuredData data={getSiteStructuredData()} />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

@@ -8,6 +8,8 @@ export type ProjectMetadata = {
   website: string;
   websiteLabel?: string;
   github?: string;
+  docs?: string;
+  api_docs?: string;
   techstack?: Array<{ label: string }>;
   selected: boolean;
   slug: string;

@@ -81,7 +81,7 @@ const projects: Project[] = [
     name: 'Green Ghana',
     slug: 'green_ghana',
     description:
-      'A mobile app that helps users track their fitness activities, set goals, and monitor progress with motivational tools.',
+      'A mobile app for requesting tree seedlings, following planting guidance, and tracking planted trees for Ghana’s Green Ghana initiative.',
     thumbnail: '/images/projects/green_ghana/cover.jpg',
     category: 'Mobile App',
     tags: ['Flutter', 'Firebase', 'Google Maps API'],
