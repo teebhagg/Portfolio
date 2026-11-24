@@ -23,7 +23,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 import { Separator } from '@/components/ui/separator';
-import { trimString } from '@/lib/utils';
+import { cn, trimString } from '@/lib/utils';
 import { trimLen } from '@/components/sections/skills/config';
 import { Skill } from '@/types/skill';
 import remarkGfm from 'remark-gfm';
