@@ -1,4 +1,5 @@
 import type { Metadata, ResolvingMetadata } from 'next';
+import SectionColorField from '@/components/section-color-field';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 
@@ -115,7 +116,7 @@ const ProjectPage = (props: ProjectPageProps) => {
           genre: metadata.category
         }}
       />
-      <div data-section-tone="sky">
+      <div data-section-tone="sky" data-section-color-anchor="sky">
         <div className="container mx-auto px-4 pb-20 md:px-6">
           <Header metadata={metadata} />
 
@@ -275,6 +276,7 @@ const ProjectPage = (props: ProjectPageProps) => {
           </div>
         </div>
       </div>
+      <SectionColorField />
       <Footer />
     </>
   );

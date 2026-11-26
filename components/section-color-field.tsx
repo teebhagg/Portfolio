@@ -15,7 +15,7 @@ const colors: Record<'light' | 'dark', Record<string, RGB>> = {
     gold: [250, 245, 219],
     navy: [23, 39, 69],
     charcoal: [31, 33, 38],
-    'deep-blue': [0, 0, 0]
+    'deep-blue': [23, 39, 69]
   },
   dark: {
     sky: [0, 0, 0],

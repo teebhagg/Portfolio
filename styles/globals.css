@@ -866,3 +866,33 @@ main > div:not(.section-color-field) {
     overflow-wrap: anywhere;
   }
 }
+
+/* Adaptive scrollbar: the thumb is the section's own foreground at low opacity and the track is transparent,
+   so it follows the section colour the SectionColorField writes to --scroll-foreground as the page changes tone. */
+.adaptive-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--scroll-foreground, 0 0% 0%) / 0.28) transparent;
+}
+.adaptive-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.adaptive-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.adaptive-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--scroll-foreground, 0 0% 0%) / 0.28);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 200ms ease;
+}
+.adaptive-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--scroll-foreground, 0 0% 0%) / 0.45);
+  background-clip: padding-box;
+}
+@media (prefers-reduced-motion: reduce) {
+  .adaptive-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}

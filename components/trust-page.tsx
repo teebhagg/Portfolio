@@ -1,4 +1,5 @@
 import { Header, Footer } from '@/components/sections';
+import SectionColorField from '@/components/section-color-field';
 import Cursor from '@/components/cursor/cursor';
 import ScrollWordReveal from '@/components/scroll-word-reveal';
 
@@ -38,6 +39,7 @@ export function TrustPage({
       <Header />
       <main
         data-section-tone="rose"
+        data-section-color-anchor="rose"
         className="w-full px-4 pb-20 pt-32 sm:px-6 md:pt-40"
       >
         <article className="mx-auto w-full max-w-3xl">
@@ -52,6 +54,7 @@ export function TrustPage({
           </div>
         </article>
       </main>
+      <SectionColorField />
       <Footer />
       <Cursor />
     </>

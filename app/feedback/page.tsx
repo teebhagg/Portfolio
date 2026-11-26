@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import SectionColorField from '@/components/section-color-field';
 import Cursor from '@/components/cursor/cursor';
 import { Footer, Header } from '@/components/sections';
 import FeedbackForm from './feedback-form';
@@ -16,6 +17,7 @@ export default function FeedbackPage() {
       <Header />
       <main
         data-section-tone="rose"
+        data-section-color-anchor="rose"
         className="w-full px-4 pb-20 pt-32 sm:px-6 md:pt-40"
       >
         <div className="mx-auto w-full max-w-4xl">
@@ -35,6 +37,7 @@ export default function FeedbackPage() {
           <FeedbackForm />
         </div>
       </main>
+      <SectionColorField />
       <Footer />
       <Cursor />
     </>
